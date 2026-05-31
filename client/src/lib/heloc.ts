@@ -1,4 +1,4 @@
-import type { CarInput, HelocResult } from "../types";
+import type { CarInput, HelocResult, EquityRow } from "../types";
 
 export const TAX_RATE = 0.14975; // GST 5% + QST 9.975% (Quebec)
 export const HELOC_RATE = 0.0445; // fixed annual HELOC interest
@@ -30,6 +30,34 @@ export function curveResale(buyingPrice: number, years: number, yearlyMileage: n
   const mileageFactor = Math.min(CURVE_MILEAGE_FACTOR_MAX, Math.max(CURVE_MILEAGE_FACTOR_MIN, rawMileageFactor));
   const resale = buyingPrice * timeFactor * mileageFactor;
   return Math.round(Math.min(buyingPrice, Math.max(0, resale)));
+}
+
+/**
+ * Equity upside/downside vs the break-even assumption.
+ *
+ * The monthly split is sized to break even at `baseline.resaleValue` (it covers
+ * depreciation + interest exactly, leaving no equity). If the car actually sells
+ * for a different price, the difference is equity returned (or a shortfall),
+ * split between the two payers in proportion to what each contributed.
+ */
+export function buildEquityRows(
+  baseline: HelocResult,
+  refs: { label: string; resale: number }[]
+): EquityRow[] {
+  const totalContrib = baseline.husseinTotal + baseline.abedTotal;
+  const husseinShare = totalContrib > 0 ? baseline.husseinTotal / totalContrib : 0.5;
+  return refs
+    .filter((r) => Number.isFinite(r.resale))
+    .map((r) => {
+      const equity = r.resale - baseline.resaleValue;
+      return {
+        label: r.label,
+        resale: r.resale,
+        equity,
+        husseinEquity: equity * husseinShare,
+        abedEquity: equity * (1 - husseinShare),
+      };
+    });
 }
 
 export function calculateHeloc(input: CarInput, resaleValue: number): HelocResult {

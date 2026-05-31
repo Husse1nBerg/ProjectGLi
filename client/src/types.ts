@@ -43,6 +43,14 @@ export interface HelocResult {
   months: number;
 }
 
+export interface EquityRow {
+  label: string;
+  resale: number;
+  equity: number; // resale - baseline resale; positive = equity returned, negative = shortfall
+  husseinEquity: number;
+  abedEquity: number;
+}
+
 export interface SavedCar {
   id: string;
   label: string;

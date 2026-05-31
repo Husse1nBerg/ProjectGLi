@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { TAX_RATE, HELOC_RATE, CURVE_ANNUAL_RATE, CURVE_AVG_ANNUAL_KM, mileageAtSale, calculateHeloc, curveResale } from "./heloc";
+import { TAX_RATE, HELOC_RATE, CURVE_ANNUAL_RATE, CURVE_AVG_ANNUAL_KM, mileageAtSale, calculateHeloc, curveResale, buildEquityRows } from "./heloc";
 import type { CarInput } from "../types";
 
 const base: CarInput = {
@@ -43,6 +43,34 @@ describe("curveResale", () => {
   });
   it("returns the full price for a zero-year hold", () => {
     expect(curveResale(30000, 0, 8000)).toBe(30000);
+  });
+});
+
+describe("buildEquityRows", () => {
+  const baseline = calculateHeloc(base, 22000); // hussein $200/mo, 2yr
+
+  it("returns equity = resale minus the break-even baseline", () => {
+    const [strong] = buildEquityRows(baseline, [{ label: "Strong", resale: 28000 }]);
+    expect(strong.equity).toBe(6000); // 28000 - 22000
+  });
+
+  it("shows a negative equity (shortfall) when selling below the baseline", () => {
+    const [weak] = buildEquityRows(baseline, [{ label: "Weak", resale: 18000 }]);
+    expect(weak.equity).toBe(-4000);
+    expect(weak.husseinEquity).toBeLessThan(0);
+  });
+
+  it("splits equity in proportion to each payer's total contribution", () => {
+    const [strong] = buildEquityRows(baseline, [{ label: "Strong", resale: 28000 }]);
+    const hShare = baseline.husseinTotal / (baseline.husseinTotal + baseline.abedTotal);
+    expect(strong.husseinEquity).toBeCloseTo(6000 * hShare, 6);
+    expect(strong.husseinEquity + strong.abedEquity).toBeCloseTo(6000, 6);
+  });
+
+  it("filters out non-finite reference prices", () => {
+    const rows = buildEquityRows(baseline, [{ label: "n/a", resale: NaN }, { label: "ok", resale: 25000 }]);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].label).toBe("ok");
   });
 });
 

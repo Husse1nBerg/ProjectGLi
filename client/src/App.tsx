@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { CarInput, HelocResult, ResaleEstimate, SavedCar, Scenario } from "./types";
-import { calculateHeloc, curveResale } from "./lib/heloc";
+import { calculateHeloc, curveResale, buildEquityRows } from "./lib/heloc";
 import { loadSavedCars, saveCar, removeCar } from "./lib/storage";
 import { fetchResaleEstimate } from "./api";
 import InputForm from "./components/InputForm";
@@ -63,6 +63,18 @@ export default function App() {
     if (!isValid || Number.isNaN(resaleValue)) return null;
     return calculateHeloc(input, resaleValue);
   }, [input, resaleValue, isValid]);
+
+  const equityRows = useMemo(() => {
+    if (!result) return [];
+    const refs: { label: string; resale: number }[] = [];
+    if (estimate) {
+      refs.push({ label: "Conservative", resale: estimate.conservativeResale });
+      refs.push({ label: "Realistic", resale: estimate.realisticResale });
+      refs.push({ label: "Strong market", resale: estimate.strongResale });
+    }
+    if (!Number.isNaN(curveValue)) refs.push({ label: "Depreciation curve", resale: curveValue });
+    return buildEquityRows(result, refs);
+  }, [result, estimate, curveValue]);
 
   async function handleEstimate() {
     if (!isValid) {
@@ -144,7 +156,7 @@ export default function App() {
         <section className="mt-6 rounded-2xl bg-white p-6 shadow-sm">
           <h2 className="mb-4 text-lg font-semibold">Results</h2>
           {result ? (
-            <ResultsDashboard result={result} onSave={handleSave} />
+            <ResultsDashboard result={result} equityRows={equityRows} onSave={handleSave} />
           ) : (
             <p className="text-sm text-slate-500">
               Enter valid vehicle details and a resale value (estimate or manual) to see results.
