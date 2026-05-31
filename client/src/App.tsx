@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { CarInput, HelocResult, ResaleEstimate, SavedCar, Scenario } from "./types";
-import { calculateHeloc } from "./lib/heloc";
+import { calculateHeloc, curveResale } from "./lib/heloc";
 import { loadSavedCars, saveCar, removeCar } from "./lib/storage";
 import { fetchResaleEstimate } from "./api";
 import InputForm from "./components/InputForm";
@@ -19,7 +19,7 @@ const defaultInput: CarInput = {
   husseinMonthly: NaN,
 };
 
-const scenarioField: Record<Scenario, keyof ResaleEstimate> = {
+const scenarioField: Record<Exclude<Scenario, "curve">, keyof ResaleEstimate> = {
   conservative: "conservativeResale",
   realistic: "realisticResale",
   strong: "strongResale",
@@ -57,6 +57,8 @@ export default function App() {
   const errors = validate(input);
   const isValid = Object.keys(errors).length === 0;
 
+  const curveValue = isValid ? curveResale(input.buyingPrice, input.ownershipYears) : NaN;
+
   const result: HelocResult | null = useMemo(() => {
     if (!isValid || Number.isNaN(resaleValue)) return null;
     return calculateHeloc(input, resaleValue);
@@ -83,7 +85,11 @@ export default function App() {
 
   function handleScenario(s: Scenario) {
     setScenario(s);
-    if (estimate) setResaleValue(estimate[scenarioField[s]] as number);
+    if (s === "curve") {
+      setResaleValue(curveValue);
+    } else if (estimate) {
+      setResaleValue(estimate[scenarioField[s]] as number);
+    }
   }
 
   function handleSave() {
@@ -125,6 +131,7 @@ export default function App() {
               estimate={estimate}
               scenario={scenario}
               resaleValue={resaleValue}
+              curveValue={curveValue}
               loading={loading}
               error={error}
               onEstimate={handleEstimate}

@@ -9,13 +9,19 @@ export interface CarInput {
   husseinMonthly: number;   // CAD Hussein contributes per month
 }
 
-export type Scenario = "conservative" | "realistic" | "strong";
+export type Scenario = "conservative" | "realistic" | "strong" | "curve";
+
+export interface Source {
+  url: string;
+  title: string;
+}
 
 export interface ResaleEstimate {
   conservativeResale: number;
   realisticResale: number;
   strongResale: number;
   explanation: string;
+  sources: Source[];
 }
 
 export interface HelocResult {
