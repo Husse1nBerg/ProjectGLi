@@ -1,9 +1,12 @@
+#TRY IT HERE: https://heloc-car-calculator.onrender.com/
+
+
 # HELOC Car Ownership Calculator
 
 Calculates the true monthly/yearly cost of owning a car financed with a HELOC,
 counting only **depreciation + interest carrying cost** (no insurance, gas,
-maintenance, repairs, registration, or tires). Splits the cost between two payers
-(Hussein / Abed) and estimates Quebec resale value via the OpenAI web-search API.
+maintenance, repairs, registration, or tires). Splits the cost between up to 3 payers
+and estimates resale value via the OpenAI web-search API.
 
 ## Financial model
 
