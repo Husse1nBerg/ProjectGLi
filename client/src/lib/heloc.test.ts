@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { TAX_RATE, HELOC_RATE, mileageAtSale, calculateHeloc } from "./heloc";
+import { TAX_RATE, HELOC_RATE, CURVE_ANNUAL_RATE, mileageAtSale, calculateHeloc, curveResale } from "./heloc";
 import type { CarInput } from "../types";
 
 const base: CarInput = {
@@ -17,6 +17,21 @@ describe("constants", () => {
   it("uses Quebec tax and HELOC rates", () => {
     expect(TAX_RATE).toBe(0.14975);
     expect(HELOC_RATE).toBe(0.0445);
+  });
+  it("uses a 15%/yr classic depreciation rate", () => {
+    expect(CURVE_ANNUAL_RATE).toBe(0.15);
+  });
+});
+
+describe("curveResale", () => {
+  it("applies declining-balance depreciation from the pre-tax price", () => {
+    expect(curveResale(30000, 2)).toBe(21675); // 30000 * 0.85^2
+  });
+  it("returns the full price for a zero-year hold", () => {
+    expect(curveResale(30000, 0)).toBe(30000);
+  });
+  it("rounds to whole dollars", () => {
+    expect(curveResale(19999, 3)).toBe(Math.round(19999 * 0.85 ** 3));
   });
 });
 
