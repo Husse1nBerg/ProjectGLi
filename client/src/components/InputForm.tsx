@@ -27,23 +27,23 @@ export default function InputForm({ input, onChange, errors }: Props) {
     type: "text" | "number",
     suffix?: string
   ) => (
-    <label className="flex flex-col gap-1">
-      <span className="text-sm font-medium text-slate-700">{label}</span>
+    <label className="flex flex-col gap-2">
+      <span className="label">{label}</span>
       <div className="flex items-center gap-2">
         <input
           type={type}
           value={Number.isNaN(input[key] as number) ? "" : String(input[key])}
           onChange={(e) => set(key, e.target.value)}
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:outline-none"
+          className="field-input"
         />
-        {suffix && <span className="text-sm text-slate-500">{suffix}</span>}
+        {suffix && <span className="suffix">{suffix}</span>}
       </div>
-      {errors[key] && <span className="text-xs text-red-600">{errors[key]}</span>}
+      {errors[key] && <span className="helper err">{errors[key]}</span>}
     </label>
   );
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
       {field("makeModel", "Make / Model", "text")}
       {field("trim", "Trim", "text")}
       {field("year", "Year", "number")}
@@ -51,7 +51,7 @@ export default function InputForm({ input, onChange, errors }: Props) {
       {field("currentMileage", "Current mileage", "number", "km")}
       {field("yearlyMileage", "Yearly mileage", "number", "km/yr")}
       {field("ownershipYears", "Ownership period", "number", "years")}
-      {field("husseinMonthly", "Hussein monthly contribution", "number", "CAD")}
+      {field("husseinMonthly", "Hussein monthly", "number", "CAD")}
     </div>
   );
 }

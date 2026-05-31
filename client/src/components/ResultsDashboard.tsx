@@ -9,13 +9,6 @@ interface Props {
 
 type Tint = "strong" | "hussein" | "abed";
 
-function tintClass(tint?: Tint): string {
-  if (tint === "strong") return "bg-indigo-50 font-semibold";
-  if (tint === "hussein") return "bg-sky-50 font-medium";
-  if (tint === "abed") return "bg-emerald-50 font-medium";
-  return "";
-}
-
 export default function ResultsDashboard({ result, equityRows, onSave }: Props) {
   const rows: { label: string; value: string; tint?: Tint }[] = [
     { label: "Purchase price (before tax)", value: formatCAD(result.totalPurchaseCost - result.tax) },
@@ -36,68 +29,70 @@ export default function ResultsDashboard({ result, equityRows, onSave }: Props) 
   ];
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       {result.overContribution && (
-        <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
+        <p className="warn">
           ⚠ Hussein's monthly contribution exceeds the total monthly cost. Abed's share is clamped to $0.00.
         </p>
       )}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <Card title="Total monthly" value={formatCAD(result.totalMonthlyCost)} />
-        <Card title="Hussein / month" value={formatCAD(result.husseinMonthly)} accent="sky" />
-        <Card title="Abed / month" value={formatCAD(result.abedMonthly)} accent="emerald" />
+        <Card title="Hussein / month" value={formatCAD(result.husseinMonthly)} accent="hussein" />
+        <Card title="Abed / month" value={formatCAD(result.abedMonthly)} accent="abed" />
       </div>
 
-      <table className="w-full border-collapse overflow-hidden rounded-lg border border-slate-200 text-sm">
+      <table className="data-table">
         <thead>
-          <tr className="bg-slate-100 text-left">
-            <th className="px-4 py-2 font-semibold">Metric</th>
-            <th className="px-4 py-2 text-right font-semibold">Value</th>
+          <tr>
+            <th>Metric</th>
+            <th style={{ textAlign: "right" }}>Value</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.label} className={`border-t border-slate-100 ${tintClass(row.tint)}`}>
-              <td className="px-4 py-2">{row.label}</td>
-              <td className="px-4 py-2 text-right tabular-nums">{row.value}</td>
+            <tr key={row.label} className={row.tint ? `row-${row.tint}` : ""}>
+              <td>{row.label}</td>
+              <td className="num">{row.value}</td>
             </tr>
           ))}
         </tbody>
       </table>
 
       {equityRows.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <h3 className="text-sm font-semibold text-slate-800">Equity if you sell at a different price</h3>
-          <p className="text-xs text-slate-500">
+        <div className="flex flex-col gap-3">
+          <div className="section-title">
+            <span className="num">↗</span> Equity if you sell at a different price
+          </div>
+          <p className="text-xs leading-relaxed text-[var(--ice-dim)]">
             The split above breaks even at the assumed resale of{" "}
-            <span className="font-medium">{formatCAD(result.resaleValue)}</span> — it covers depreciation + interest
-            with nothing left over. If the car actually sells for one of these prices, the difference comes back as
-            equity (or a shortfall), split by each payer's share of total contributions.
+            <span className="text-[var(--ice)]">{formatCAD(result.resaleValue)}</span> — it covers depreciation +
+            interest with nothing left over. If the car actually sells for one of these prices, the difference comes
+            back as equity (or a shortfall), split by each payer's share of total contributions.
           </p>
-          <table className="w-full border-collapse overflow-hidden rounded-lg border border-slate-200 text-sm">
+          <table className="data-table">
             <thead>
-              <tr className="bg-slate-100 text-left">
-                <th className="px-4 py-2 font-semibold">Scenario</th>
-                <th className="px-4 py-2 text-right font-semibold">Resale</th>
-                <th className="px-4 py-2 text-right font-semibold">Equity returned</th>
-                <th className="px-4 py-2 text-right font-semibold">Hussein</th>
-                <th className="px-4 py-2 text-right font-semibold">Abed</th>
+              <tr>
+                <th>Scenario</th>
+                <th style={{ textAlign: "right" }}>Resale</th>
+                <th style={{ textAlign: "right" }}>Equity returned</th>
+                <th style={{ textAlign: "right" }}>Hussein</th>
+                <th style={{ textAlign: "right" }}>Abed</th>
               </tr>
             </thead>
             <tbody>
               {equityRows.map((row) => {
-                const sign = row.equity > 0 ? "text-emerald-700" : row.equity < 0 ? "text-red-600" : "text-slate-500";
+                const sign = row.equity > 0 ? "eq-pos" : row.equity < 0 ? "eq-neg" : "eq-zero";
                 return (
-                  <tr key={row.label} className="border-t border-slate-100">
-                    <td className="px-4 py-2">{row.label}</td>
-                    <td className="px-4 py-2 text-right tabular-nums">{formatCAD(row.resale)}</td>
-                    <td className={`px-4 py-2 text-right font-semibold tabular-nums ${sign}`}>
+                  <tr key={row.label}>
+                    <td>{row.label}</td>
+                    <td className="num">{formatCAD(row.resale)}</td>
+                    <td className={`num ${sign}`} style={{ fontWeight: 600 }}>
                       {row.equity > 0 ? "+" : ""}
                       {formatCAD(row.equity)}
                     </td>
-                    <td className={`px-4 py-2 text-right tabular-nums ${sign}`}>{formatCAD(row.husseinEquity)}</td>
-                    <td className={`px-4 py-2 text-right tabular-nums ${sign}`}>{formatCAD(row.abedEquity)}</td>
+                    <td className={`num ${sign}`}>{formatCAD(row.husseinEquity)}</td>
+                    <td className={`num ${sign}`}>{formatCAD(row.abedEquity)}</td>
                   </tr>
                 );
               })}
@@ -106,19 +101,18 @@ export default function ResultsDashboard({ result, equityRows, onSave }: Props) 
         </div>
       )}
 
-      <button onClick={onSave} className="self-start rounded-lg border border-indigo-600 px-4 py-2 font-medium text-indigo-700 hover:bg-indigo-50">
+      <button onClick={onSave} className="btn-ghost self-start">
         Save to comparison
       </button>
     </div>
   );
 }
 
-function Card({ title, value, accent }: { title: string; value: string; accent?: "sky" | "emerald" }) {
-  const border = accent === "sky" ? "border-sky-200 bg-sky-50" : accent === "emerald" ? "border-emerald-200 bg-emerald-50" : "border-slate-200 bg-white";
+function Card({ title, value, accent }: { title: string; value: string; accent?: "hussein" | "abed" }) {
   return (
-    <div className={`rounded-xl border p-4 shadow-sm ${border}`}>
-      <div className="text-xs uppercase tracking-wide text-slate-500">{title}</div>
-      <div className="mt-1 text-2xl font-bold text-slate-900 tabular-nums">{value}</div>
+    <div className={`stat ${accent ? `accent-${accent}` : ""}`}>
+      <div className="s-title">{title}</div>
+      <div className="s-amount">{value}</div>
     </div>
   );
 }

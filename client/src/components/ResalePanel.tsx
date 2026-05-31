@@ -28,15 +28,10 @@ function ScenarioButton(props: {
 }) {
   const { active, label, value, hint, onClick } = props;
   return (
-    <button
-      onClick={onClick}
-      className={`rounded-lg border px-3 py-2 text-sm ${
-        active ? "border-indigo-600 bg-indigo-50 font-semibold" : "border-slate-300"
-      }`}
-    >
-      <div>{label}</div>
-      <div className="text-xs text-slate-500">{Number.isNaN(value) ? "—" : formatCAD(value)}</div>
-      {hint && <div className="text-[10px] uppercase tracking-wide text-slate-400">{hint}</div>}
+    <button onClick={onClick} className={`scenario ${active ? "sel" : ""}`}>
+      <div className="s-label">{label}</div>
+      <div className="s-value">{Number.isNaN(value) ? "—" : formatCAD(value)}</div>
+      {hint && <div className="s-hint">{hint}</div>}
     </button>
   );
 }
@@ -44,16 +39,16 @@ function ScenarioButton(props: {
 export default function ResalePanel(props: Props) {
   const { estimate, scenario, resaleValue, curveValue, loading, error, onEstimate, onScenario, onResaleEdit } = props;
   return (
-    <div className="flex flex-col gap-4">
-      <button
-        onClick={onEstimate}
-        disabled={loading}
-        className="rounded-lg bg-indigo-600 px-4 py-2 font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-      >
+    <div className="flex flex-col gap-5">
+      <button onClick={onEstimate} disabled={loading} className="btn-primary">
         {loading ? "Searching Quebec listings…" : "Estimate resale value (AI)"}
       </button>
 
-      {error && <p className="text-sm text-red-600">{error} You can type a resale value below.</p>}
+      {error && (
+        <p className="helper err">
+          {error} You can type a resale value below.
+        </p>
+      )}
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {estimate &&
@@ -75,35 +70,32 @@ export default function ResalePanel(props: Props) {
         />
       </div>
 
-      <label className="flex flex-col gap-1">
-        <span className="text-sm font-medium text-slate-700">Resale value (editable)</span>
+      <label className="flex flex-col gap-2">
+        <span className="label">Resale value (editable)</span>
         <input
           type="number"
           value={Number.isNaN(resaleValue) ? "" : resaleValue}
           onChange={(e) => onResaleEdit(e.target.value === "" ? NaN : Number(e.target.value))}
-          className="rounded-lg border border-slate-300 px-3 py-2"
+          className="field-input"
         />
       </label>
 
       {estimate && (estimate.explanation || estimate.sources.length > 0) && (
-        <details className="rounded-lg bg-slate-50 p-3">
-          <summary className="cursor-pointer select-none text-xs font-medium text-slate-700">
+        <details className="disclosure">
+          <summary>
             AI reasoning &amp; sources{estimate.sources.length > 0 ? ` (${estimate.sources.length} listings)` : ""}
           </summary>
-          <div className="mt-2 flex flex-col gap-3">
-            {estimate.explanation && <p className="text-xs text-slate-600">{estimate.explanation}</p>}
+          <div className="body flex flex-col gap-3">
+            {estimate.explanation && (
+              <p className="text-xs leading-relaxed text-[var(--ice-dim)]">{estimate.explanation}</p>
+            )}
             {estimate.sources.length > 0 && (
-              <div className="flex flex-col gap-1">
-                <span className="text-xs font-medium text-slate-700">Sources (live listings the AI used)</span>
-                <ul className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1.5">
+                <span className="label">Sources — live listings</span>
+                <ul className="flex flex-col gap-1.5">
                   {estimate.sources.map((s) => (
                     <li key={s.url}>
-                      <a
-                        href={s.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-indigo-600 hover:underline"
-                      >
+                      <a href={s.url} target="_blank" rel="noopener noreferrer" className="src-link">
                         {s.title}
                       </a>
                     </li>

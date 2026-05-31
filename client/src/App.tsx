@@ -122,23 +122,30 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <div className="mx-auto max-w-5xl px-4 py-8">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold">HELOC Car Ownership Calculator</h1>
-          <p className="mt-1 text-slate-600">
-            True cost of owning a car financed by a HELOC at 4.45% — depreciation + interest carrying cost only.
-          </p>
+    <div className="min-h-screen">
+      <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8 sm:py-16">
+        <header className="mb-12">
+          <div className="eyebrow">
+            <span className="line" />
+            Personal finance · Quebec
+          </div>
+          <h1 className="h-display mt-5">
+            HELOC <em>Car</em> Ownership Calculator
+          </h1>
         </header>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <section className="rounded-2xl bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-lg font-semibold">Vehicle & financing</h2>
+          <section className="panel">
+            <div className="section-title mb-6">
+              <span className="num">01</span> Vehicle &amp; financing
+            </div>
             <InputForm input={input} onChange={setInput} errors={errors} />
           </section>
 
-          <section className="rounded-2xl bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-lg font-semibold">Resale value</h2>
+          <section className="panel">
+            <div className="section-title mb-6">
+              <span className="num">02</span> Resale value
+            </div>
             <ResalePanel
               estimate={estimate}
               scenario={scenario}
@@ -153,24 +160,28 @@ export default function App() {
           </section>
         </div>
 
-        <section className="mt-6 rounded-2xl bg-white p-6 shadow-sm">
-          <h2 className="mb-4 text-lg font-semibold">Results</h2>
+        <section className="panel mt-6">
+          <div className="section-title mb-6">
+            <span className="num">03</span> Results
+          </div>
           {result ? (
             <ResultsDashboard result={result} equityRows={equityRows} onSave={handleSave} />
           ) : (
-            <p className="text-sm text-slate-500">
+            <p className="helper">
               Enter valid vehicle details and a resale value (estimate or manual) to see results.
             </p>
           )}
         </section>
 
-        <section className="mt-6 rounded-2xl bg-white p-6 shadow-sm">
-          <h2 className="mb-4 text-lg font-semibold">Comparison</h2>
+        <section className="panel mt-6">
+          <div className="section-title mb-6">
+            <span className="num">04</span> Comparison
+          </div>
           <ComparisonTable cars={savedCars} onRemove={handleRemove} />
         </section>
 
-        <footer className="mt-8 text-center text-xs text-slate-400">
-          Financing/depreciation only — excludes insurance, gas, maintenance, repairs, registration, tires.
+        <footer className="mt-10 text-center font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--frost-deep)]">
+          Financing / depreciation only — excludes insurance, gas, maintenance, repairs, registration, tires.
         </footer>
       </div>
     </div>

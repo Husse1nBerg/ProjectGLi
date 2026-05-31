@@ -8,7 +8,7 @@ interface Props {
 
 export default function ComparisonTable({ cars, onRemove }: Props) {
   if (cars.length === 0) {
-    return <p className="text-sm text-slate-500">No saved cars yet. Save a calculation to compare here.</p>;
+    return <p className="helper">No saved cars yet. Save a calculation to compare here.</p>;
   }
 
   const metrics: { label: string; get: (c: SavedCar) => string }[] = [
@@ -23,15 +23,17 @@ export default function ComparisonTable({ cars, onRemove }: Props) {
   ];
 
   return (
-    <table className="w-full border-collapse overflow-hidden rounded-lg border border-slate-200 text-sm">
+    <table className="data-table">
       <thead>
-        <tr className="bg-slate-100 text-left">
-          <th className="px-4 py-2 font-semibold">Metric</th>
+        <tr>
+          <th>Metric</th>
           {cars.map((c) => (
-            <th key={c.id} className="px-4 py-2 font-semibold">
-              <div className="flex items-center justify-between gap-2">
+            <th key={c.id} style={{ textAlign: "right" }}>
+              <div className="flex items-center justify-end gap-3">
                 <span>{c.label}</span>
-                <button onClick={() => onRemove(c.id)} className="text-xs text-red-600 hover:underline">remove</button>
+                <button onClick={() => onRemove(c.id)} className="src-link">
+                  remove
+                </button>
               </div>
             </th>
           ))}
@@ -39,10 +41,12 @@ export default function ComparisonTable({ cars, onRemove }: Props) {
       </thead>
       <tbody>
         {metrics.map((m) => (
-          <tr key={m.label} className="border-t border-slate-100">
-            <td className="px-4 py-2 text-slate-600">{m.label}</td>
+          <tr key={m.label}>
+            <td>{m.label}</td>
             {cars.map((c) => (
-              <td key={c.id} className="px-4 py-2 text-right tabular-nums">{m.get(c)}</td>
+              <td key={c.id} className="num">
+                {m.get(c)}
+              </td>
             ))}
           </tr>
         ))}
