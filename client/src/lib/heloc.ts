@@ -44,8 +44,9 @@ export function buildEquityRows(
   baseline: HelocResult,
   refs: { label: string; resale: number }[]
 ): EquityRow[] {
-  const totalContrib = baseline.husseinTotal + baseline.abedTotal;
-  const husseinShare = totalContrib > 0 ? baseline.husseinTotal / totalContrib : 0.5;
+  const totalContrib = baseline.contributors.reduce((s, c) => s + c.total, 0);
+  const n = baseline.contributors.length;
+  const shares = baseline.contributors.map((c) => (totalContrib > 0 ? c.total / totalContrib : 1 / n));
   return refs
     .filter((r) => Number.isFinite(r.resale))
     .map((r) => {
@@ -54,8 +55,7 @@ export function buildEquityRows(
         label: r.label,
         resale: r.resale,
         equity,
-        husseinEquity: equity * husseinShare,
-        abedEquity: equity * (1 - husseinShare),
+        contributorEquity: shares.map((s) => equity * s),
       };
     });
 }
@@ -71,9 +71,18 @@ export function calculateHeloc(input: CarInput, resaleValue: number): HelocResul
   const yearlyCost = totalMonthlyCost * 12;
   const totalOwnershipCost = totalMonthlyCost * months;
 
-  const overContribution = input.husseinMonthly > totalMonthlyCost;
-  const husseinMonthly = input.husseinMonthly;
-  const abedMonthly = Math.max(0, totalMonthlyCost - husseinMonthly);
+  // First N-1 contributors enter explicit monthly amounts; the LAST pays the remainder.
+  const list = input.contributors;
+  const n = list.length;
+  const amount = (c: { monthly: number }) => (Number.isNaN(c.monthly) ? 0 : c.monthly);
+  const enteredSum = list.slice(0, Math.max(0, n - 1)).reduce((s, c) => s + amount(c), 0);
+  const remainder = Math.max(0, totalMonthlyCost - enteredSum);
+  const overContribution = enteredSum > totalMonthlyCost + 1e-6;
+
+  const contributors = list.map((c, i) => {
+    const monthly = i < n - 1 ? amount(c) : remainder;
+    return { name: c.name, monthly, total: monthly * months };
+  });
 
   return {
     tax,
@@ -86,10 +95,7 @@ export function calculateHeloc(input: CarInput, resaleValue: number): HelocResul
     totalMonthlyCost,
     yearlyCost,
     totalOwnershipCost,
-    husseinMonthly,
-    abedMonthly,
-    husseinTotal: husseinMonthly * months,
-    abedTotal: abedMonthly * months,
+    contributors,
     overContribution,
     months,
   };

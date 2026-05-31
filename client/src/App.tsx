@@ -4,6 +4,8 @@ import { calculateHeloc, curveResale, buildEquityRows } from "./lib/heloc";
 import { loadSavedCars, saveCar, removeCar } from "./lib/storage";
 import { fetchResaleEstimate } from "./api";
 import InputForm from "./components/InputForm";
+import ContributorList, { newContributor, MIN_CONTRIBUTORS, MAX_CONTRIBUTORS } from "./components/ContributorList";
+import type { Contributor } from "./types";
 import ResalePanel from "./components/ResalePanel";
 import ResultsDashboard from "./components/ResultsDashboard";
 import ComparisonTable from "./components/ComparisonTable";
@@ -17,7 +19,7 @@ const defaultInput: CarInput = {
   currentMileage: NaN,
   yearlyMileage: 15000,
   ownershipYears: 2,
-  husseinMonthly: NaN,
+  contributors: [newContributor(1), newContributor(2)],
   aiNotes: "",
 };
 
@@ -35,11 +37,20 @@ function validate(input: CarInput): Partial<Record<keyof CarInput, string>> {
     const v = input[k] as number;
     if (Number.isNaN(v) || v <= 0) errors[k] = "Must be > 0";
   }
-  const nonNeg: (keyof CarInput)[] = ["currentMileage", "yearlyMileage", "husseinMonthly"];
+  const nonNeg: (keyof CarInput)[] = ["currentMileage", "yearlyMileage"];
   for (const k of nonNeg) {
     const v = input[k] as number;
     if (Number.isNaN(v) || v < 0) errors[k] = "Must be ≥ 0";
   }
+  return errors;
+}
+
+// The last contributor pays the remainder, so only the entered ones need a valid amount.
+function validateContributors(input: CarInput): Record<string, string> {
+  const errors: Record<string, string> = {};
+  input.contributors.slice(0, -1).forEach((c) => {
+    if (Number.isNaN(c.monthly) || c.monthly < 0) errors[c.id] = "Must be ≥ 0";
+  });
   return errors;
 }
 
@@ -57,7 +68,8 @@ export default function App() {
   useEffect(() => setSavedCars(loadSavedCars()), []);
 
   const errors = validate(input);
-  const isValid = Object.keys(errors).length === 0;
+  const contributorErrors = validateContributors(input);
+  const isValid = Object.keys(errors).length === 0 && Object.keys(contributorErrors).length === 0;
 
   const curveValue = isValid ? curveResale(input.buyingPrice, input.ownershipYears, input.yearlyMileage) : NaN;
 
@@ -123,13 +135,35 @@ export default function App() {
     setSavedCars(removeCar(id));
   }
 
+  // Contributor edits use functional updates so each operation applies to the latest state.
+  function updateContributor(id: string, patch: Partial<Contributor>) {
+    setInput((prev) => ({
+      ...prev,
+      contributors: prev.contributors.map((c) => (c.id === id ? { ...c, ...patch } : c)),
+    }));
+  }
+  function addContributor() {
+    setInput((prev) =>
+      prev.contributors.length >= MAX_CONTRIBUTORS
+        ? prev
+        : { ...prev, contributors: [...prev.contributors, newContributor(prev.contributors.length + 1)] }
+    );
+  }
+  function removeContributor(id: string) {
+    setInput((prev) =>
+      prev.contributors.length <= MIN_CONTRIBUTORS
+        ? prev
+        : { ...prev, contributors: prev.contributors.filter((c) => c.id !== id) }
+    );
+  }
+
   return (
     <div className="min-h-screen">
       <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8 sm:py-16">
         <header className="mb-12">
           <div className="eyebrow">
             <span className="line" />
-            Personal finance · Quebec
+            Created by Hussein Bayoun
           </div>
           <h1 className="h-display mt-5">
             HELOC <em>Car</em> Ownership Calculator
@@ -142,6 +176,14 @@ export default function App() {
               <span className="num">01</span> Vehicle &amp; financing
             </div>
             <InputForm input={input} onChange={setInput} errors={errors} />
+            <div className="my-6 h-px bg-[var(--hairline)]" />
+            <ContributorList
+              contributors={input.contributors}
+              errors={contributorErrors}
+              onUpdate={updateContributor}
+              onAdd={addContributor}
+              onRemove={removeContributor}
+            />
           </section>
 
           <section className="panel">
@@ -186,8 +228,9 @@ export default function App() {
           <ComparisonTable cars={savedCars} onRemove={handleRemove} />
         </section>
 
-        <footer className="mt-10 text-center font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--frost-deep)]">
-          Financing / depreciation only — excludes insurance, gas, maintenance, repairs, registration, tires.
+        <footer className="mt-10 flex flex-col items-center gap-2 text-center font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--frost-deep)]">
+          <span>Financing / depreciation only — excludes insurance, gas, maintenance, repairs, registration, tires.</span>
+          <span className="tracking-[0.3em] text-[var(--frost)]">© Hussein Bayoun — all rights reserved</span>
         </footer>
       </div>
     </div>

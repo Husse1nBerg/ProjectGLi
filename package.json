@@ -11,6 +11,9 @@
     "build": "npm --prefix client run build",
     "test": "npm --prefix client run test"
   },
+  "dependencies": {
+    "openai": "^4.77.0"
+  },
   "devDependencies": {
     "concurrently": "^9.1.0"
   }

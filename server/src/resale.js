@@ -67,8 +67,8 @@ export function buildPrompt(input) {
   const { makeModel, year, trim, transmission, buyingPrice, currentMileage, expectedMileageAtSale, ownershipYears, notes } = input;
   const vehicle = [year, makeModel, trim, transmission].filter(Boolean).join(" ");
   const lines = [
-    `You are a Quebec used-car pricing analyst. You MUST use web search to find current`,
-    `Quebec/Canadian used-car listings (AutoTrader.ca, Kijiji Autos, etc.) for comparable`,
+    `You are a used-car pricing analyst. You MUST use web search to find current`,
+    `used-car listings (AutoTrader.ca, Kijiji Autos, Cars.com, etc.) for comparable`,
     `vehicles, then reason about the depreciation curve from those comps.`,
     ``,
     `Vehicle: ${vehicle}`,

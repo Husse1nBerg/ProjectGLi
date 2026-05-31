@@ -305,11 +305,14 @@ body::after {
   color: var(--ice);
   font-weight: 500;
 }
-.data-table tr.row-hussein td {
+.data-table tr.row-c1 td {
   background: rgba(138, 165, 194, 0.1); /* frost */
 }
-.data-table tr.row-abed td {
+.data-table tr.row-c2 td {
   background: rgba(212, 168, 87, 0.1); /* gold */
+}
+.data-table tr.row-c3 td {
+  background: rgba(155, 140, 196, 0.12); /* mauve */
 }
 
 /* ============================================================
@@ -321,13 +324,17 @@ body::after {
   border-radius: 3px;
   padding: 18px 20px;
 }
-.stat.accent-hussein {
+.stat.accent-c1 {
   border-color: rgba(138, 165, 194, 0.4);
   background: linear-gradient(135deg, rgba(138, 165, 194, 0.1), transparent);
 }
-.stat.accent-abed {
+.stat.accent-c2 {
   border-color: rgba(212, 168, 87, 0.4);
   background: linear-gradient(135deg, rgba(212, 168, 87, 0.1), transparent);
+}
+.stat.accent-c3 {
+  border-color: rgba(155, 140, 196, 0.45);
+  background: linear-gradient(135deg, rgba(155, 140, 196, 0.12), transparent);
 }
 .stat .s-title {
   font-family: var(--f-mono);

@@ -1,13 +1,19 @@
+export interface Contributor {
+  id: string;
+  name: string;
+  monthly: number; // entered monthly amount; ignored for the LAST contributor (pays the remainder)
+}
+
 export interface CarInput {
   makeModel: string;
   year: number;
   trim: string;
   transmission: string;     // "" = unspecified; e.g. Automatic, Manual, DSG, CVT
-  buyingPrice: number;      // before tax, CAD
+  buyingPrice: number;      // before tax
   currentMileage: number;   // km
   yearlyMileage: number;    // km per year
   ownershipYears: number;
-  husseinMonthly: number;   // CAD Hussein contributes per month
+  contributors: Contributor[]; // 2–3 people splitting the cost; last one pays the remainder
   aiNotes: string;          // freeform extra context for the AI resale lookup
 }
 
@@ -37,11 +43,8 @@ export interface HelocResult {
   totalMonthlyCost: number;
   yearlyCost: number;
   totalOwnershipCost: number;
-  husseinMonthly: number;
-  abedMonthly: number;
-  husseinTotal: number;
-  abedTotal: number;
-  overContribution: boolean; // husseinMonthly > totalMonthlyCost
+  contributors: { name: string; monthly: number; total: number }[];
+  overContribution: boolean; // entered shares sum to more than the total monthly cost
   months: number;
 }
 
@@ -49,8 +52,7 @@ export interface EquityRow {
   label: string;
   resale: number;
   equity: number; // resale - baseline resale; positive = equity returned, negative = shortfall
-  husseinEquity: number;
-  abedEquity: number;
+  contributorEquity: number[]; // equity split, aligned to the baseline result's contributors
 }
 
 export interface SavedCar {

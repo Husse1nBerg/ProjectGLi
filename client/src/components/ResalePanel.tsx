@@ -49,7 +49,7 @@ export default function ResalePanel(props: Props) {
   return (
     <div className="flex flex-col gap-5">
       <button onClick={onEstimate} disabled={loading} className="btn-primary">
-        {loading ? "Searching Quebec listings…" : "Estimate resale value (AI)"}
+        {loading ? "Searching listings…" : "Estimate resale value (AI)"}
       </button>
 
       {error && (

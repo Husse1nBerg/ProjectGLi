@@ -18,8 +18,6 @@ export default function ComparisonTable({ cars, onRemove }: Props) {
     { label: "Total monthly cost", get: (c) => formatCAD(c.result.totalMonthlyCost) },
     { label: "Yearly cost", get: (c) => formatCAD(c.result.yearlyCost) },
     { label: "Total ownership cost", get: (c) => formatCAD(c.result.totalOwnershipCost) },
-    { label: "Hussein / month", get: (c) => formatCAD(c.result.husseinMonthly) },
-    { label: "Abed / month", get: (c) => formatCAD(c.result.abedMonthly) },
   ];
 
   return (
@@ -50,6 +48,20 @@ export default function ComparisonTable({ cars, onRemove }: Props) {
             ))}
           </tr>
         ))}
+        <tr>
+          <td>Monthly split</td>
+          {cars.map((c) => (
+            <td key={c.id} className="num">
+              <div className="flex flex-col items-end gap-0.5">
+                {c.result.contributors.map((p, i) => (
+                  <span key={i} className="text-[var(--ice-dim)]">
+                    {(p.name.trim() || `Contributor ${i + 1}`)}: {formatCAD(p.monthly)}
+                  </span>
+                ))}
+              </div>
+            </td>
+          ))}
+        </tr>
       </tbody>
     </table>
   );

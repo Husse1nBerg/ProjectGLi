@@ -11,12 +11,15 @@ const base: CarInput = {
   currentMileage: 20000,
   yearlyMileage: 15000,
   ownershipYears: 2,
-  husseinMonthly: 200,
+  contributors: [
+    { id: "c1", name: "Alpha", monthly: 200 },
+    { id: "c2", name: "Beta", monthly: NaN }, // last = remainder
+  ],
   aiNotes: "",
 };
 
 describe("constants", () => {
-  it("uses Quebec tax and HELOC rates", () => {
+  it("uses combined sales tax and HELOC rates", () => {
     expect(TAX_RATE).toBe(0.14975);
     expect(HELOC_RATE).toBe(0.0445);
   });
@@ -30,11 +33,9 @@ describe("constants", () => {
 
 describe("curveResale", () => {
   it("equals pure time depreciation at the average mileage", () => {
-    // factor = 1 at avg km; 30000 * 0.85^2
     expect(curveResale(30000, 2, CURVE_AVG_ANNUAL_KM)).toBe(21675);
   });
   it("applies a premium for below-average mileage", () => {
-    // 8000 km/yr vs 15000 avg over 2 yrs => +14000 km under => +5.6%
     expect(curveResale(30000, 2, 8000)).toBe(22889);
   });
   it("applies a discount for above-average mileage", () => {
@@ -48,79 +49,108 @@ describe("curveResale", () => {
   });
 });
 
-describe("buildEquityRows", () => {
-  const baseline = calculateHeloc(base, 22000); // hussein $200/mo, 2yr
-
-  it("returns equity = resale minus the break-even baseline", () => {
-    const [strong] = buildEquityRows(baseline, [{ label: "Strong", resale: 28000 }]);
-    expect(strong.equity).toBe(6000); // 28000 - 22000
-  });
-
-  it("shows a negative equity (shortfall) when selling below the baseline", () => {
-    const [weak] = buildEquityRows(baseline, [{ label: "Weak", resale: 18000 }]);
-    expect(weak.equity).toBe(-4000);
-    expect(weak.husseinEquity).toBeLessThan(0);
-  });
-
-  it("splits equity in proportion to each payer's total contribution", () => {
-    const [strong] = buildEquityRows(baseline, [{ label: "Strong", resale: 28000 }]);
-    const hShare = baseline.husseinTotal / (baseline.husseinTotal + baseline.abedTotal);
-    expect(strong.husseinEquity).toBeCloseTo(6000 * hShare, 6);
-    expect(strong.husseinEquity + strong.abedEquity).toBeCloseTo(6000, 6);
-  });
-
-  it("filters out non-finite reference prices", () => {
-    const rows = buildEquityRows(baseline, [{ label: "n/a", resale: NaN }, { label: "ok", resale: 25000 }]);
-    expect(rows).toHaveLength(1);
-    expect(rows[0].label).toBe("ok");
-  });
-});
-
 describe("mileageAtSale", () => {
   it("adds yearly mileage over ownership years", () => {
     expect(mileageAtSale(20000, 15000, 2)).toBe(50000);
   });
 });
 
-describe("calculateHeloc", () => {
+describe("calculateHeloc — cost", () => {
   const r = calculateHeloc(base, 22000);
 
-  it("computes Quebec tax on the buying price", () => {
+  it("computes sales tax on the buying price", () => {
     expect(r.tax).toBeCloseTo(4492.5, 2); // 30000 * 0.14975
   });
   it("computes total purchase cost", () => {
     expect(r.totalPurchaseCost).toBeCloseTo(34492.5, 2);
   });
   it("computes depreciation loss vs resale", () => {
-    expect(r.depreciationLoss).toBeCloseTo(12492.5, 2); // 34492.5 - 22000
+    expect(r.depreciationLoss).toBeCloseTo(12492.5, 2);
   });
-  it("computes monthly depreciation over the period", () => {
-    expect(r.monthlyDepreciation).toBeCloseTo(520.52, 2); // 12492.5 / 24
-  });
-  it("computes monthly interest on full balance", () => {
-    expect(r.monthlyInterest).toBeCloseTo(127.91, 2); // 34492.5 * 0.0445 / 12
-  });
-  it("computes total monthly cost", () => {
+  it("computes monthly depreciation, interest, total", () => {
+    expect(r.monthlyDepreciation).toBeCloseTo(520.52, 2);
+    expect(r.monthlyInterest).toBeCloseTo(127.91, 2);
     expect(r.totalMonthlyCost).toBeCloseTo(648.43, 2);
   });
   it("computes yearly and total ownership cost", () => {
     expect(r.yearlyCost).toBeCloseTo(7781.166, 2);
     expect(r.totalOwnershipCost).toBeCloseTo(15562.332, 2);
   });
-  it("splits payments: Abed pays the remainder", () => {
-    expect(r.husseinMonthly).toBe(200);
-    expect(r.abedMonthly).toBeCloseTo(448.43, 2);
-    expect(r.husseinTotal).toBeCloseTo(4800, 2);
-    expect(r.abedTotal).toBeCloseTo(10762.332, 2);
-  });
-  it("flags over-contribution and clamps Abed to >= 0", () => {
-    const over = calculateHeloc({ ...base, husseinMonthly: 5000 }, 22000);
-    expect(over.overContribution).toBe(true);
-    expect(over.abedMonthly).toBe(0);
-    expect(over.abedTotal).toBe(0);
-  });
   it("handles resale above purchase cost (a gain) without crashing", () => {
-    const gain = calculateHeloc(base, 40000);
-    expect(gain.depreciationLoss).toBeCloseTo(-5507.5, 2);
+    expect(calculateHeloc(base, 40000).depreciationLoss).toBeCloseTo(-5507.5, 2);
+  });
+});
+
+describe("calculateHeloc — contributor split", () => {
+  it("the last contributor pays the remainder", () => {
+    const r = calculateHeloc(base, 22000);
+    expect(r.contributors).toHaveLength(2);
+    expect(r.contributors[0]).toMatchObject({ name: "Alpha", monthly: 200 });
+    expect(r.contributors[0].total).toBeCloseTo(4800, 2);
+    expect(r.contributors[1].name).toBe("Beta");
+    expect(r.contributors[1].monthly).toBeCloseTo(448.43, 2);
+    expect(r.contributors[1].total).toBeCloseTo(10762.332, 2);
+  });
+
+  it("supports three contributors; last absorbs the remainder", () => {
+    const r = calculateHeloc(
+      { ...base, contributors: [
+        { id: "a", name: "A", monthly: 200 },
+        { id: "b", name: "B", monthly: 100 },
+        { id: "c", name: "C", monthly: NaN },
+      ] },
+      22000
+    );
+    expect(r.contributors.map((c) => c.monthly.toFixed(2))).toEqual(["200.00", "100.00", "348.43"]);
+    const sum = r.contributors.reduce((s, c) => s + c.monthly, 0);
+    expect(sum).toBeCloseTo(r.totalMonthlyCost, 6);
+  });
+
+  it("flags over-contribution and clamps the remainder to >= 0", () => {
+    const over = calculateHeloc(
+      { ...base, contributors: [{ id: "a", name: "A", monthly: 5000 }, { id: "b", name: "B", monthly: NaN }] },
+      22000
+    );
+    expect(over.overContribution).toBe(true);
+    expect(over.contributors[1].monthly).toBe(0);
+    expect(over.contributors[1].total).toBe(0);
+  });
+
+  it("treats an empty (NaN) entered amount as 0", () => {
+    const r = calculateHeloc(
+      { ...base, contributors: [{ id: "a", name: "A", monthly: NaN }, { id: "b", name: "B", monthly: NaN }] },
+      22000
+    );
+    expect(r.contributors[0].monthly).toBe(0);
+    expect(r.contributors[1].monthly).toBeCloseTo(r.totalMonthlyCost, 6);
+  });
+});
+
+describe("buildEquityRows", () => {
+  const baseline = calculateHeloc(base, 22000);
+
+  it("returns equity = resale minus the break-even baseline", () => {
+    const [strong] = buildEquityRows(baseline, [{ label: "Strong", resale: 28000 }]);
+    expect(strong.equity).toBe(6000);
+  });
+
+  it("shows a negative equity (shortfall) when selling below the baseline", () => {
+    const [weak] = buildEquityRows(baseline, [{ label: "Weak", resale: 18000 }]);
+    expect(weak.equity).toBe(-4000);
+    expect(weak.contributorEquity[0]).toBeLessThan(0);
+  });
+
+  it("splits equity in proportion to each payer's total contribution", () => {
+    const [strong] = buildEquityRows(baseline, [{ label: "Strong", resale: 28000 }]);
+    const total = baseline.contributors.reduce((s, c) => s + c.total, 0);
+    expect(strong.contributorEquity[0]).toBeCloseTo(6000 * (baseline.contributors[0].total / total), 6);
+    expect(strong.contributorEquity.reduce((s, e) => s + e, 0)).toBeCloseTo(6000, 6);
+    expect(strong.contributorEquity).toHaveLength(baseline.contributors.length);
+  });
+
+  it("filters out non-finite reference prices", () => {
+    const rows = buildEquityRows(baseline, [{ label: "n/a", resale: NaN }, { label: "ok", resale: 25000 }]);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].label).toBe("ok");
   });
 });
