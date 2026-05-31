@@ -331,12 +331,12 @@ body::after {
   font-variant-numeric: tabular-nums;
 }
 
-/* equity sign colours */
+/* equity sign colours — green gain, red shortfall */
 .eq-pos {
-  color: var(--gold);
+  color: #34d399; /* emerald */
 }
 .eq-neg {
-  color: var(--cedar-hot);
+  color: var(--cedar-hot); /* red */
 }
 .eq-zero {
   color: var(--frost-deep);

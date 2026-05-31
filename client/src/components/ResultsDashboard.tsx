@@ -60,10 +60,9 @@ export default function ResultsDashboard({ result, equityRows, onSave }: Props) 
       </table>
 
       {equityRows.length > 0 && (
-        <div className="flex flex-col gap-3">
-          <div className="section-title">
-            <span className="num">↗</span> Equity if you sell at a different price
-          </div>
+        <details className="disclosure">
+          <summary>Equity if you sell at a different price</summary>
+          <div className="mt-3 flex flex-col gap-3">
           <p className="text-xs leading-relaxed text-[var(--ice-dim)]">
             The split above breaks even at the assumed resale of{" "}
             <span className="text-[var(--ice)]">{formatCAD(result.resaleValue)}</span> — it covers depreciation +
@@ -98,7 +97,8 @@ export default function ResultsDashboard({ result, equityRows, onSave }: Props) 
               })}
             </tbody>
           </table>
-        </div>
+          </div>
+        </details>
       )}
 
       <button onClick={onSave} className="btn-ghost self-start">

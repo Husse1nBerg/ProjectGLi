@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatCAD, formatKm } from "./format";
+import { formatCAD, formatCAD0, formatKm } from "./format";
 
 describe("formatCAD", () => {
   it("formats whole dollars in CAD", () => {
@@ -7,6 +7,15 @@ describe("formatCAD", () => {
   });
   it("formats zero", () => {
     expect(formatCAD(0)).toBe("$0.00");
+  });
+});
+
+describe("formatCAD0", () => {
+  it("formats whole dollars with no cents", () => {
+    expect(formatCAD0(20000)).toBe("$20,000");
+  });
+  it("rounds fractional values to the nearest dollar", () => {
+    expect(formatCAD0(23651.6)).toBe("$23,652");
   });
 });
 

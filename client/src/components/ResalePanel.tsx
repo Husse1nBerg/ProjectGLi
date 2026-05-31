@@ -1,5 +1,5 @@
 import type { ResaleEstimate, Scenario } from "../types";
-import { formatCAD } from "../lib/format";
+import { formatCAD0 } from "../lib/format";
 
 interface Props {
   estimate: ResaleEstimate | null;
@@ -30,7 +30,7 @@ function ScenarioButton(props: {
   return (
     <button onClick={onClick} className={`scenario ${active ? "sel" : ""}`}>
       <div className="s-label">{label}</div>
-      <div className="s-value">{Number.isNaN(value) ? "—" : formatCAD(value)}</div>
+      <div className="s-value">{Number.isNaN(value) ? "—" : formatCAD0(value)}</div>
       {hint && <div className="s-hint">{hint}</div>}
     </button>
   );
