@@ -65,9 +65,7 @@ export function extractSources(response) {
 
 export function buildPrompt(input) {
   const { makeModel, year, trim, transmission, buyingPrice, currentMileage, expectedMileageAtSale, ownershipYears, notes } = input;
-  const vehicle = [year, makeModel, trim, transmission ? `${transmission} transmission` : ""]
-    .filter(Boolean)
-    .join(" ");
+  const vehicle = [year, makeModel, trim, transmission].filter(Boolean).join(" ");
   const lines = [
     `You are a Quebec used-car pricing analyst. You MUST use web search to find current`,
     `Quebec/Canadian used-car listings (AutoTrader.ca, Kijiji Autos, etc.) for comparable`,
@@ -82,10 +80,11 @@ export function buildPrompt(input) {
   }
   lines.push(
     ``,
-    `Match comps on transmission and trim where possible — they materially affect resale.`,
+    `Match comps on powertrain/transmission and trim where possible — they materially affect resale`,
+    `(an EV, hybrid, manual, or automatic of the same model can carry very different values).`,
     `Estimate the resale value in CAD at the END of the ownership period for three market`,
     `scenarios (conservative, realistic, strong). In the explanation, cite the specific`,
-    `comparable listings (model, mileage, transmission, price) you found.`
+    `comparable listings (model, mileage, powertrain, price) you found.`
   );
   return lines.join("\n");
 }

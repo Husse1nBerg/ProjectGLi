@@ -79,7 +79,7 @@ export default function ResalePanel(props: Props) {
       </div>
 
       <label className="flex flex-col gap-2">
-        <span className="label">Transmission</span>
+        <span className="label">Transmission / powertrain</span>
         <select
           value={transmission}
           onChange={(e) => onTransmissionChange(e.target.value)}
@@ -90,6 +90,9 @@ export default function ResalePanel(props: Props) {
           <option value="Manual">Manual</option>
           <option value="DSG / dual-clutch">DSG / dual-clutch</option>
           <option value="CVT">CVT</option>
+          <option value="Hybrid">Hybrid</option>
+          <option value="Plug-in hybrid (PHEV)">Plug-in hybrid (PHEV)</option>
+          <option value="Electric (EV)">Electric (EV)</option>
         </select>
       </label>
 
