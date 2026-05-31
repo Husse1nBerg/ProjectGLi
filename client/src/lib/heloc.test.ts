@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { TAX_RATE, HELOC_RATE, CURVE_ANNUAL_RATE, mileageAtSale, calculateHeloc, curveResale } from "./heloc";
+import { TAX_RATE, HELOC_RATE, CURVE_ANNUAL_RATE, CURVE_AVG_ANNUAL_KM, mileageAtSale, calculateHeloc, curveResale } from "./heloc";
 import type { CarInput } from "../types";
 
 const base: CarInput = {
@@ -21,17 +21,28 @@ describe("constants", () => {
   it("uses a 15%/yr classic depreciation rate", () => {
     expect(CURVE_ANNUAL_RATE).toBe(0.15);
   });
+  it("uses a 15,000 km/yr average-driver baseline", () => {
+    expect(CURVE_AVG_ANNUAL_KM).toBe(15000);
+  });
 });
 
 describe("curveResale", () => {
-  it("applies declining-balance depreciation from the pre-tax price", () => {
-    expect(curveResale(30000, 2)).toBe(21675); // 30000 * 0.85^2
+  it("equals pure time depreciation at the average mileage", () => {
+    // factor = 1 at avg km; 30000 * 0.85^2
+    expect(curveResale(30000, 2, CURVE_AVG_ANNUAL_KM)).toBe(21675);
+  });
+  it("applies a premium for below-average mileage", () => {
+    // 8000 km/yr vs 15000 avg over 2 yrs => +14000 km under => +5.6%
+    expect(curveResale(30000, 2, 8000)).toBe(22889);
+  });
+  it("applies a discount for above-average mileage", () => {
+    expect(curveResale(30000, 2, 25000)).toBeLessThan(curveResale(30000, 2, CURVE_AVG_ANNUAL_KM));
+  });
+  it("never exceeds the pre-tax purchase price", () => {
+    expect(curveResale(30000, 2, 0)).toBeLessThanOrEqual(30000);
   });
   it("returns the full price for a zero-year hold", () => {
-    expect(curveResale(30000, 0)).toBe(30000);
-  });
-  it("rounds to whole dollars", () => {
-    expect(curveResale(19999, 3)).toBe(Math.round(19999 * 0.85 ** 3));
+    expect(curveResale(30000, 0, 8000)).toBe(30000);
   });
 });
 

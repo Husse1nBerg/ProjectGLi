@@ -52,9 +52,12 @@ Two independent ways to set the resale value:
   tool, which looks up live Quebec/Canadian listings. Output is enforced with a strict
   **JSON schema** (structured outputs), and the real **source URLs** the model cited are
   extracted from the response and shown as clickable links so you can verify the comps.
-- **Classic depreciation curve:** a deterministic, offline baseline —
-  declining-balance at **15%/yr** from the pre-tax price (`resale = price × 0.85^years`,
-  `CURVE_ANNUAL_RATE` in `client/src/lib/heloc.ts`). Always available, no API call.
+- **Classic depreciation curve (mileage-aware):** a deterministic, offline baseline —
+  `resale = price × (1 − 0.15)^years × mileageFactor`, where the mileage factor rewards
+  below-average use: `1 + (avgKmDriven − yourKmDriven)/1000 × 0.4%`, with an average-driver
+  baseline of **15,000 km/yr**. At average mileage the factor is exactly 1 (no double
+  counting). Tunable constants (`CURVE_ANNUAL_RATE`, `CURVE_AVG_ANNUAL_KM`,
+  `CURVE_MILEAGE_SENSITIVITY`) live in `client/src/lib/heloc.ts`. Always available, no API call.
 
 Every scenario value (conservative / realistic / strong / curve) is editable — the
 estimates are starting points; your number wins.

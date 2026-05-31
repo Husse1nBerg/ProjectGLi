@@ -57,7 +57,7 @@ export default function App() {
   const errors = validate(input);
   const isValid = Object.keys(errors).length === 0;
 
-  const curveValue = isValid ? curveResale(input.buyingPrice, input.ownershipYears) : NaN;
+  const curveValue = isValid ? curveResale(input.buyingPrice, input.ownershipYears, input.yearlyMileage) : NaN;
 
   const result: HelocResult | null = useMemo(() => {
     if (!isValid || Number.isNaN(resaleValue)) return null;

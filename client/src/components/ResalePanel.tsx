@@ -70,7 +70,7 @@ export default function ResalePanel(props: Props) {
           active={scenario === "curve"}
           label="Depreciation curve"
           value={curveValue}
-          hint="15%/yr formula"
+          hint="15%/yr · mileage-adj"
           onClick={() => onScenario("curve")}
         />
       </div>
