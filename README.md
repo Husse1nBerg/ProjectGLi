@@ -44,10 +44,27 @@ npm run build                # builds client to client/dist
 npm --prefix server start    # Express serves the built client + API on :3001
 ```
 
+## Resale estimation
+
+Two independent ways to set the resale value:
+
+- **AI (web search):** the server calls the OpenAI Responses API with the `web_search`
+  tool, which looks up live Quebec/Canadian listings. Output is enforced with a strict
+  **JSON schema** (structured outputs), and the real **source URLs** the model cited are
+  extracted from the response and shown as clickable links so you can verify the comps.
+- **Classic depreciation curve:** a deterministic, offline baseline —
+  declining-balance at **15%/yr** from the pre-tax price (`resale = price × 0.85^years`,
+  `CURVE_ANNUAL_RATE` in `client/src/lib/heloc.ts`). Always available, no API call.
+
+Every scenario value (conservative / realistic / strong / curve) is editable — the
+estimates are starting points; your number wins.
+
 ## Usage
 
 1. Enter make/model, year, trim, buying price, mileage, yearly km, ownership years,
    and Hussein's monthly contribution.
-2. Click **Estimate resale value (AI)** — or type a resale value manually.
-3. Switch between conservative / realistic / strong-market scenarios; edit any value.
+2. Click **Estimate resale value (AI)** — or pick the **Depreciation curve** scenario,
+   or just type a resale value manually.
+3. Switch between conservative / realistic / strong / curve scenarios; edit any value.
+   Review the cited source listings under the AI explanation.
 4. Review the results table and save cars to the comparison table.
