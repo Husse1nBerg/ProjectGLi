@@ -2,6 +2,19 @@ import OpenAI from "openai";
 
 const MODEL = process.env.OPENAI_MODEL || "gpt-4o";
 
+// Strict JSON schema the model is forced to satisfy (OpenAI structured outputs).
+const RESALE_SCHEMA = {
+  type: "object",
+  properties: {
+    conservativeResale: { type: "number" },
+    realisticResale: { type: "number" },
+    strongResale: { type: "number" },
+    explanation: { type: "string" },
+  },
+  required: ["conservativeResale", "realisticResale", "strongResale", "explanation"],
+  additionalProperties: false,
+};
+
 /** Extract the first JSON object found in a string. Returns null if none/invalid. */
 export function extractJson(text) {
   if (!text) return null;
@@ -28,22 +41,42 @@ export function normalizeEstimate(obj) {
     realisticResale: num(obj.realisticResale),
     strongResale: num(obj.strongResale),
     explanation: String(obj.explanation || "").slice(0, 2000),
+    sources: [],
   };
+}
+
+/** Pull the real url_citation annotations the web_search tool attached to the output. */
+export function extractSources(response) {
+  const sources = [];
+  const seen = new Set();
+  for (const item of response?.output ?? []) {
+    if (item.type !== "message") continue;
+    for (const part of item.content ?? []) {
+      for (const ann of part.annotations ?? []) {
+        if (ann.type === "url_citation" && ann.url && !seen.has(ann.url)) {
+          seen.add(ann.url);
+          sources.push({ url: ann.url, title: ann.title || ann.url });
+        }
+      }
+    }
+  }
+  return sources;
 }
 
 export function buildPrompt(input) {
   const { makeModel, year, trim, buyingPrice, currentMileage, expectedMileageAtSale, ownershipYears } = input;
   return [
-    `You are a Quebec used-car pricing analyst. Search current Quebec/Canadian used-car listings`,
-    `(AutoTrader.ca, Kijiji Autos, etc.) and reason about the depreciation curve.`,
+    `You are a Quebec used-car pricing analyst. You MUST use web search to find current`,
+    `Quebec/Canadian used-car listings (AutoTrader.ca, Kijiji Autos, etc.) for comparable`,
+    `vehicles, then reason about the depreciation curve from those comps.`,
     ``,
     `Vehicle: ${year} ${makeModel} ${trim || ""}`.trim(),
     `Bought today for CAD ${buyingPrice} (before tax), current odometer ${currentMileage} km.`,
     `Owner keeps it ${ownershipYears} year(s); projected odometer at sale ≈ ${expectedMileageAtSale} km.`,
     ``,
-    `Estimate the resale value in CAD at the END of the ownership period for three market scenarios.`,
-    `Respond with ONLY a JSON object, no markdown, in exactly this shape:`,
-    `{"conservativeResale": <number>, "realisticResale": <number>, "strongResale": <number>, "explanation": "<2-4 sentences citing what you found>"}`,
+    `Estimate the resale value in CAD at the END of the ownership period for three market`,
+    `scenarios (conservative, realistic, strong). In the explanation, cite the specific`,
+    `comparable listings (model, mileage, price) you found.`,
   ].join("\n");
 }
 
@@ -53,7 +86,16 @@ export async function estimateResale(input) {
     model: MODEL,
     tools: [{ type: "web_search_preview" }],
     input: buildPrompt(input),
+    text: {
+      format: {
+        type: "json_schema",
+        name: "resale_estimate",
+        strict: true,
+        schema: RESALE_SCHEMA,
+      },
+    },
   });
-  const text = response.output_text;
-  return normalizeEstimate(extractJson(text));
+  const estimate = normalizeEstimate(extractJson(response.output_text));
+  estimate.sources = extractSources(response);
+  return estimate;
 }
