@@ -85,28 +85,34 @@ export default function ResalePanel(props: Props) {
         />
       </label>
 
-      {estimate?.explanation && (
-        <p className="rounded-lg bg-slate-50 p-3 text-xs text-slate-600">{estimate.explanation}</p>
-      )}
-
-      {estimate && estimate.sources.length > 0 && (
-        <div className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-slate-700">Sources (live listings the AI used)</span>
-          <ul className="flex flex-col gap-1">
-            {estimate.sources.map((s) => (
-              <li key={s.url}>
-                <a
-                  href={s.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-indigo-600 hover:underline"
-                >
-                  {s.title}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
+      {estimate && (estimate.explanation || estimate.sources.length > 0) && (
+        <details className="rounded-lg bg-slate-50 p-3">
+          <summary className="cursor-pointer select-none text-xs font-medium text-slate-700">
+            AI reasoning &amp; sources{estimate.sources.length > 0 ? ` (${estimate.sources.length} listings)` : ""}
+          </summary>
+          <div className="mt-2 flex flex-col gap-3">
+            {estimate.explanation && <p className="text-xs text-slate-600">{estimate.explanation}</p>}
+            {estimate.sources.length > 0 && (
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-medium text-slate-700">Sources (live listings the AI used)</span>
+                <ul className="flex flex-col gap-1">
+                  {estimate.sources.map((s) => (
+                    <li key={s.url}>
+                      <a
+                        href={s.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-indigo-600 hover:underline"
+                      >
+                        {s.title}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </details>
       )}
     </div>
   );
