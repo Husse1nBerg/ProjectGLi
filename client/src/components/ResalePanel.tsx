@@ -11,6 +11,10 @@ interface Props {
   onEstimate: () => void;
   onScenario: (s: Scenario) => void;
   onResaleEdit: (value: number) => void;
+  transmission: string;
+  aiNotes: string;
+  onTransmissionChange: (value: string) => void;
+  onNotesChange: (value: string) => void;
 }
 
 const aiScenarios: { key: Scenario; label: string; field: keyof ResaleEstimate }[] = [
@@ -37,7 +41,11 @@ function ScenarioButton(props: {
 }
 
 export default function ResalePanel(props: Props) {
-  const { estimate, scenario, resaleValue, curveValue, loading, error, onEstimate, onScenario, onResaleEdit } = props;
+  const {
+    estimate, scenario, resaleValue, curveValue, loading, error,
+    onEstimate, onScenario, onResaleEdit,
+    transmission, aiNotes, onTransmissionChange, onNotesChange,
+  } = props;
   return (
     <div className="flex flex-col gap-5">
       <button onClick={onEstimate} disabled={loading} className="btn-primary">
@@ -71,6 +79,21 @@ export default function ResalePanel(props: Props) {
       </div>
 
       <label className="flex flex-col gap-2">
+        <span className="label">Transmission</span>
+        <select
+          value={transmission}
+          onChange={(e) => onTransmissionChange(e.target.value)}
+          className="field-input field-select"
+        >
+          <option value="">Unspecified</option>
+          <option value="Automatic">Automatic</option>
+          <option value="Manual">Manual</option>
+          <option value="DSG / dual-clutch">DSG / dual-clutch</option>
+          <option value="CVT">CVT</option>
+        </select>
+      </label>
+
+      <label className="flex flex-col gap-2">
         <span className="label">Resale value (editable)</span>
         <input
           type="number"
@@ -79,6 +102,20 @@ export default function ResalePanel(props: Props) {
           className="field-input"
         />
       </label>
+
+      <details className="disclosure">
+        <summary>Add details for the AI estimate</summary>
+        <div className="mt-3 flex flex-col gap-2">
+          <textarea
+            value={aiNotes}
+            onChange={(e) => onNotesChange(e.target.value)}
+            rows={3}
+            placeholder="e.g. no accidents, winter tires included, Autobahn package, recent brakes — anything that sharpens the comp search"
+            className="field-input resize-y"
+          />
+          <span className="helper">Sent to the AI to refine its Quebec comp search. The depreciation curve ignores it.</span>
+        </div>
+      </details>
 
       {estimate && (estimate.explanation || estimate.sources.length > 0) && (
         <details className="disclosure">

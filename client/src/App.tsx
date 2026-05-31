@@ -12,11 +12,13 @@ const defaultInput: CarInput = {
   makeModel: "",
   year: 2022,
   trim: "",
+  transmission: "",
   buyingPrice: NaN,
   currentMileage: NaN,
   yearlyMileage: 15000,
   ownershipYears: 2,
   husseinMonthly: NaN,
+  aiNotes: "",
 };
 
 const scenarioField: Record<Exclude<Scenario, "curve">, keyof ResaleEstimate> = {
@@ -156,6 +158,10 @@ export default function App() {
               onEstimate={handleEstimate}
               onScenario={handleScenario}
               onResaleEdit={setResaleValue}
+              transmission={input.transmission}
+              aiNotes={input.aiNotes}
+              onTransmissionChange={(t) => setInput({ ...input, transmission: t })}
+              onNotesChange={(n) => setInput({ ...input, aiNotes: n })}
             />
           </section>
         </div>

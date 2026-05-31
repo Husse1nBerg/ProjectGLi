@@ -64,20 +64,30 @@ export function extractSources(response) {
 }
 
 export function buildPrompt(input) {
-  const { makeModel, year, trim, buyingPrice, currentMileage, expectedMileageAtSale, ownershipYears } = input;
-  return [
+  const { makeModel, year, trim, transmission, buyingPrice, currentMileage, expectedMileageAtSale, ownershipYears, notes } = input;
+  const vehicle = [year, makeModel, trim, transmission ? `${transmission} transmission` : ""]
+    .filter(Boolean)
+    .join(" ");
+  const lines = [
     `You are a Quebec used-car pricing analyst. You MUST use web search to find current`,
     `Quebec/Canadian used-car listings (AutoTrader.ca, Kijiji Autos, etc.) for comparable`,
     `vehicles, then reason about the depreciation curve from those comps.`,
     ``,
-    `Vehicle: ${year} ${makeModel} ${trim || ""}`.trim(),
+    `Vehicle: ${vehicle}`,
     `Bought today for CAD ${buyingPrice} (before tax), current odometer ${currentMileage} km.`,
     `Owner keeps it ${ownershipYears} year(s); projected odometer at sale ≈ ${expectedMileageAtSale} km.`,
+  ];
+  if (notes && String(notes).trim()) {
+    lines.push(`Additional details from the owner (factor these into comp selection): ${String(notes).trim()}`);
+  }
+  lines.push(
     ``,
+    `Match comps on transmission and trim where possible — they materially affect resale.`,
     `Estimate the resale value in CAD at the END of the ownership period for three market`,
     `scenarios (conservative, realistic, strong). In the explanation, cite the specific`,
-    `comparable listings (model, mileage, price) you found.`,
-  ].join("\n");
+    `comparable listings (model, mileage, transmission, price) you found.`
+  );
+  return lines.join("\n");
 }
 
 export async function estimateResale(input) {

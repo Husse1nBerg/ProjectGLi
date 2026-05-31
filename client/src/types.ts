@@ -2,11 +2,13 @@ export interface CarInput {
   makeModel: string;
   year: number;
   trim: string;
+  transmission: string;     // "" = unspecified; e.g. Automatic, Manual, DSG, CVT
   buyingPrice: number;      // before tax, CAD
   currentMileage: number;   // km
   yearlyMileage: number;    // km per year
   ownershipYears: number;
   husseinMonthly: number;   // CAD Hussein contributes per month
+  aiNotes: string;          // freeform extra context for the AI resale lookup
 }
 
 export type Scenario = "conservative" | "realistic" | "strong" | "curve";

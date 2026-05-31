@@ -6,11 +6,13 @@ const base: CarInput = {
   makeModel: "Toyota Corolla",
   year: 2022,
   trim: "LE",
+  transmission: "",
   buyingPrice: 30000,
   currentMileage: 20000,
   yearlyMileage: 15000,
   ownershipYears: 2,
   husseinMonthly: 200,
+  aiNotes: "",
 };
 
 describe("constants", () => {

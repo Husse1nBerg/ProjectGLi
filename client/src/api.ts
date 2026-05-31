@@ -6,10 +6,12 @@ export async function fetchResaleEstimate(input: CarInput): Promise<ResaleEstima
     makeModel: input.makeModel,
     year: input.year,
     trim: input.trim,
+    transmission: input.transmission,
     buyingPrice: input.buyingPrice,
     currentMileage: input.currentMileage,
     expectedMileageAtSale: mileageAtSale(input.currentMileage, input.yearlyMileage, input.ownershipYears),
     ownershipYears: input.ownershipYears,
+    notes: input.aiNotes,
   };
   const res = await fetch("/api/estimate-resale", {
     method: "POST",
