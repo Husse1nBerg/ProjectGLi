@@ -1,5 +1,7 @@
+import { useState } from "react";
 import type { ResaleEstimate, Scenario } from "../types";
 import { formatCAD0 } from "../lib/format";
+import { carImageUrl } from "../lib/carImage";
 
 interface Props {
   estimate: ResaleEstimate | null;
@@ -15,6 +17,8 @@ interface Props {
   aiNotes: string;
   onTransmissionChange: (value: string) => void;
   onNotesChange: (value: string) => void;
+  makeModel: string;
+  year: number;
 }
 
 const aiScenarios: { key: Scenario; label: string; field: keyof ResaleEstimate }[] = [
@@ -45,7 +49,19 @@ export default function ResalePanel(props: Props) {
     estimate, scenario, resaleValue, curveValue, loading, error,
     onEstimate, onScenario, onResaleEdit,
     transmission, aiNotes, onTransmissionChange, onNotesChange,
+    makeModel, year,
   } = props;
+
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
+
+  function fetchImage() {
+    const url = carImageUrl(makeModel, year, aiNotes);
+    if (!url) return;
+    setImageError(false);
+    setImageUrl(url);
+  }
+
   return (
     <div className="flex flex-col gap-5">
       <button onClick={onEstimate} disabled={loading} className="btn-primary">
@@ -116,7 +132,33 @@ export default function ResalePanel(props: Props) {
             placeholder="e.g. no accidents, winter tires included, Autobahn package, recent brakes — anything that sharpens the comp search"
             className="field-input resize-y"
           />
-          <span className="helper">Sent to the AI to refine its Quebec comp search. The depreciation curve ignores it.</span>
+          <span className="helper">Sent to the AI to refine its comp search. The depreciation curve ignores it.</span>
+
+          <div className="mt-1 flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={fetchImage}
+              disabled={!makeModel.trim()}
+              className="btn-ghost self-start disabled:opacity-40"
+            >
+              {imageUrl ? "Refresh vehicle image" : "Fetch vehicle image"}
+            </button>
+            <span className="helper">Mention a colour above (e.g. "red") and refresh — the render updates to match.</span>
+            {imageUrl && !imageError && (
+              <figure className="overflow-hidden rounded border border-[var(--hairline-2)] bg-[var(--ink-2)]">
+                <img
+                  src={imageUrl}
+                  alt={`${makeModel} ${Number.isFinite(year) ? year : ""}`.trim()}
+                  onError={() => setImageError(true)}
+                  className="w-full"
+                />
+                <figcaption className="px-3 py-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--frost-deep)]">
+                  {makeModel} {Number.isFinite(year) ? `· ${year}` : ""} — rendered preview
+                </figcaption>
+              </figure>
+            )}
+            {imageError && <span className="helper err">No image found for that model.</span>}
+          </div>
         </div>
       </details>
 

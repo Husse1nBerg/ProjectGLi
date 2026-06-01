@@ -205,6 +205,8 @@ export default function App() {
               aiNotes={input.aiNotes}
               onTransmissionChange={(t) => setInput({ ...input, transmission: t })}
               onNotesChange={(n) => setInput({ ...input, aiNotes: n })}
+              makeModel={input.makeModel}
+              year={input.year}
             />
           </section>
         </div>
