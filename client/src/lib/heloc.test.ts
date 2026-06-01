@@ -11,6 +11,7 @@ const base: CarInput = {
   currentMileage: 20000,
   yearlyMileage: 15000,
   ownershipYears: 2,
+  interestRate: 4.45,
   contributors: [
     { id: "c1", name: "Alpha", monthly: 200 },
     { id: "c2", name: "Beta", monthly: NaN }, // last = remainder
@@ -71,6 +72,14 @@ describe("calculateHeloc — cost", () => {
     expect(r.monthlyDepreciation).toBeCloseTo(520.52, 2);
     expect(r.monthlyInterest).toBeCloseTo(127.91, 2);
     expect(r.totalMonthlyCost).toBeCloseTo(648.43, 2);
+  });
+  it("uses an overridden interest rate when provided", () => {
+    const r6 = calculateHeloc({ ...base, interestRate: 6 }, 22000);
+    expect(r6.monthlyInterest).toBeCloseTo((34492.5 * 0.06) / 12, 2); // 172.46
+  });
+  it("falls back to 4.45% when the rate is blank/invalid", () => {
+    const rNan = calculateHeloc({ ...base, interestRate: NaN }, 22000);
+    expect(rNan.monthlyInterest).toBeCloseTo(127.91, 2);
   });
   it("computes yearly and total ownership cost", () => {
     expect(r.yearlyCost).toBeCloseTo(7781.166, 2);

@@ -13,6 +13,7 @@ export interface CarInput {
   currentMileage: number;   // km
   yearlyMileage: number;    // km per year
   ownershipYears: number;
+  interestRate: number;     // annual HELOC rate as a percent (e.g. 4.45); falls back to 4.45 if blank
   contributors: Contributor[]; // 2–3 people splitting the cost; last one pays the remainder
   aiNotes: string;          // freeform extra context for the AI resale lookup
 }

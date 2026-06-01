@@ -19,6 +19,7 @@ const defaultInput: CarInput = {
   currentMileage: NaN,
   yearlyMileage: 15000,
   ownershipYears: 2,
+  interestRate: 4.45,
   contributors: [newContributor(1), newContributor(2)],
   aiNotes: "",
 };

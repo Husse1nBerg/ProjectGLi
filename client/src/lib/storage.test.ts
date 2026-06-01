@@ -7,7 +7,7 @@ const sample: SavedCar = {
   label: "2022 Toyota Corolla",
   input: {
     makeModel: "Toyota Corolla", year: 2022, trim: "LE", transmission: "", buyingPrice: 30000,
-    currentMileage: 20000, yearlyMileage: 15000, ownershipYears: 2,
+    currentMileage: 20000, yearlyMileage: 15000, ownershipYears: 2, interestRate: 4.45,
     contributors: [
       { id: "c1", name: "Alpha", monthly: 200 },
       { id: "c2", name: "Beta", monthly: NaN },

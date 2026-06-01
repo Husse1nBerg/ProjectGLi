@@ -7,7 +7,7 @@ interface Props {
 }
 
 const numericFields: (keyof CarInput)[] = [
-  "year", "buyingPrice", "currentMileage", "yearlyMileage", "ownershipYears",
+  "year", "buyingPrice", "currentMileage", "yearlyMileage", "ownershipYears", "interestRate",
 ];
 
 export default function InputForm({ input, onChange, errors }: Props) {
@@ -51,6 +51,7 @@ export default function InputForm({ input, onChange, errors }: Props) {
       {field("currentMileage", "Current mileage", "number", "km")}
       {field("yearlyMileage", "Yearly mileage", "number", "km/yr")}
       {field("ownershipYears", "Ownership period", "number", "years")}
+      {field("interestRate", "Interest rate (4.45% as standard)", "number", "%")}
     </div>
   );
 }

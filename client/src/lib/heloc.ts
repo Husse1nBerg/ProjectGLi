@@ -66,7 +66,9 @@ export function calculateHeloc(input: CarInput, resaleValue: number): HelocResul
   const totalPurchaseCost = input.buyingPrice + tax;
   const depreciationLoss = totalPurchaseCost - resaleValue;
   const monthlyDepreciation = months > 0 ? depreciationLoss / months : 0;
-  const monthlyInterest = (totalPurchaseCost * HELOC_RATE) / 12;
+  // Annual rate from the input (percent) overrides the default; blank/invalid → 4.45%.
+  const annualRate = Number.isFinite(input.interestRate) && input.interestRate >= 0 ? input.interestRate / 100 : HELOC_RATE;
+  const monthlyInterest = (totalPurchaseCost * annualRate) / 12;
   const totalMonthlyCost = monthlyDepreciation + monthlyInterest;
   const yearlyCost = totalMonthlyCost * 12;
   const totalOwnershipCost = totalMonthlyCost * months;
