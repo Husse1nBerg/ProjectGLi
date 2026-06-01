@@ -186,7 +186,7 @@ export default function ResalePanel(props: Props) {
             >
               {imgLoading ? "Finding image…" : imageUrl ? "Refresh vehicle image" : "Fetch vehicle image"}
             </button>
-            <span className="helper">Add a colour or details above (e.g. "red") and refresh to match.</span>
+            <span className="helper">Real photo from the web. Add details above and refresh; colour matching needs the optional Google search.</span>
             {imageUrl && !imageError && (
               <figure className="overflow-hidden rounded border border-[var(--hairline-2)] bg-[var(--ink-2)]">
                 <img
