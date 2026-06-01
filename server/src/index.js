@@ -3,6 +3,7 @@ import cors from "cors";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { estimateResale } from "./resale.js";
+import { findCarImages } from "./carImage.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -27,6 +28,19 @@ app.post("/api/estimate-resale", async (req, res) => {
   } catch (err) {
     console.error("estimate-resale failed:", err?.message || err);
     res.status(502).json({ error: "Resale estimation failed. Enter values manually." });
+  }
+});
+
+app.post("/api/car-image", async (req, res) => {
+  if (!process.env.OPENAI_API_KEY) {
+    return res.status(500).json({ error: "OPENAI_API_KEY not configured on server" });
+  }
+  try {
+    const images = await findCarImages(req.body || {});
+    res.json({ images });
+  } catch (err) {
+    console.error("car-image failed:", err?.message || err);
+    res.status(502).json({ error: "Image lookup failed." });
   }
 });
 

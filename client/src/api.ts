@@ -24,3 +24,23 @@ export async function fetchResaleEstimate(input: CarInput): Promise<ResaleEstima
   }
   return res.json();
 }
+
+/** Find real candidate photo URLs of the exact vehicle (color-aware) via OpenAI web search. */
+export async function fetchCarImages(query: {
+  makeModel: string;
+  year: number;
+  trim: string;
+  color: string;
+}): Promise<string[]> {
+  const res = await fetch("/api/car-image", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(query),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Request failed (${res.status})`);
+  }
+  const data = await res.json();
+  return Array.isArray(data.images) ? data.images : [];
+}

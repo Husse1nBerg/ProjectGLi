@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { ResaleEstimate, Scenario } from "../types";
 import { formatCAD0 } from "../lib/format";
-import { carImageUrl } from "../lib/carImage";
+import { carImageUrl, extractColor } from "../lib/carImage";
+import { fetchCarImages } from "../api";
 
 interface Props {
   estimate: ResaleEstimate | null;
@@ -19,6 +20,7 @@ interface Props {
   onNotesChange: (value: string) => void;
   makeModel: string;
   year: number;
+  trim: string;
 }
 
 const aiScenarios: { key: Scenario; label: string; field: keyof ResaleEstimate }[] = [
@@ -49,17 +51,58 @@ export default function ResalePanel(props: Props) {
     estimate, scenario, resaleValue, curveValue, loading, error,
     onEstimate, onScenario, onResaleEdit,
     transmission, aiNotes, onTransmissionChange, onNotesChange,
-    makeModel, year,
+    makeModel, year, trim,
   } = props;
 
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
+  const [imgLoading, setImgLoading] = useState(false);
+  const candidates = useRef<string[]>([]);
+  const candIdx = useRef(0);
 
-  function fetchImage() {
+  // imagin render as the last-resort fallback if no real photo loads.
+  function imaginFallback(): string[] {
     const url = carImageUrl(makeModel, year, aiNotes);
-    if (!url) return;
+    return url ? [url] : [];
+  }
+
+  function show(list: string[]) {
+    candidates.current = list;
+    candIdx.current = 0;
+    if (list.length) {
+      setImageError(false);
+      setImageUrl(list[0]);
+    } else {
+      setImageUrl(null);
+      setImageError(true);
+    }
+  }
+
+  async function fetchImage() {
+    if (!makeModel.trim()) return;
+    setImgLoading(true);
     setImageError(false);
-    setImageUrl(url);
+    setImageUrl(null);
+    try {
+      const imgs = await fetchCarImages({ makeModel, year, trim, color: extractColor(aiNotes) });
+      show([...imgs, ...imaginFallback()]); // real photos first, imagin last
+    } catch {
+      show(imaginFallback());
+    } finally {
+      setImgLoading(false);
+    }
+  }
+
+  // Advance to the next candidate when an image URL fails to load.
+  function handleImgError() {
+    const next = candIdx.current + 1;
+    if (next < candidates.current.length) {
+      candIdx.current = next;
+      setImageUrl(candidates.current[next]);
+    } else {
+      setImageUrl(null);
+      setImageError(true);
+    }
   }
 
   return (
@@ -138,22 +181,22 @@ export default function ResalePanel(props: Props) {
             <button
               type="button"
               onClick={fetchImage}
-              disabled={!makeModel.trim()}
+              disabled={!makeModel.trim() || imgLoading}
               className="btn-ghost self-start disabled:opacity-40"
             >
-              {imageUrl ? "Refresh vehicle image" : "Fetch vehicle image"}
+              {imgLoading ? "Finding image…" : imageUrl ? "Refresh vehicle image" : "Fetch vehicle image"}
             </button>
-            <span className="helper">Mention a colour above (e.g. "red") and refresh — the render updates to match.</span>
+            <span className="helper">Add a colour or details above (e.g. "red") and refresh to match.</span>
             {imageUrl && !imageError && (
               <figure className="overflow-hidden rounded border border-[var(--hairline-2)] bg-[var(--ink-2)]">
                 <img
                   src={imageUrl}
                   alt={`${makeModel} ${Number.isFinite(year) ? year : ""}`.trim()}
-                  onError={() => setImageError(true)}
+                  onError={handleImgError}
                   className="w-full"
                 />
                 <figcaption className="px-3 py-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--frost-deep)]">
-                  {makeModel} {Number.isFinite(year) ? `· ${year}` : ""} — rendered preview
+                  {makeModel} {Number.isFinite(year) ? `· ${year}` : ""}
                 </figcaption>
               </figure>
             )}

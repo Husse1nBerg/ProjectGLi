@@ -3,6 +3,7 @@
   "buildCommand": "npm --prefix client install && npm --prefix client run build",
   "outputDirectory": "client/dist",
   "functions": {
-    "api/estimate-resale.js": { "maxDuration": 60 }
+    "api/estimate-resale.js": { "maxDuration": 60 },
+    "api/car-image.js": { "maxDuration": 60 }
   }
 }

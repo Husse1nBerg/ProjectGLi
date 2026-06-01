@@ -207,6 +207,7 @@ export default function App() {
               onNotesChange={(n) => setInput({ ...input, aiNotes: n })}
               makeModel={input.makeModel}
               year={input.year}
+              trim={input.trim}
             />
           </section>
         </div>
