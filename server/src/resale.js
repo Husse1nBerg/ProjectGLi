@@ -45,20 +45,35 @@ export function normalizeEstimate(obj) {
   };
 }
 
-/** Pull the real url_citation annotations the web_search tool attached to the output. */
-export function extractSources(response) {
+/** Prefer provider citations; structured output can instead cite links in its explanation. */
+export function extractSources(response, explanation = "") {
   const sources = [];
   const seen = new Set();
+  function add(url, title) {
+    if (typeof url !== "string") return;
+    try {
+      const parsed = new URL(url);
+      if (!["https:", "http:"].includes(parsed.protocol)) return;
+      if (seen.has(parsed.href)) return;
+      seen.add(parsed.href);
+      sources.push({ url: parsed.href, title: title || parsed.href });
+    } catch {
+      // Ignore malformed links rather than breaking an otherwise valid estimate.
+    }
+  }
   for (const item of response?.output ?? []) {
     if (item.type !== "message") continue;
     for (const part of item.content ?? []) {
       for (const ann of part.annotations ?? []) {
-        if (ann.type === "url_citation" && ann.url && !seen.has(ann.url)) {
-          seen.add(ann.url);
-          sources.push({ url: ann.url, title: ann.title || ann.url });
-        }
+        if (ann.type === "url_citation") add(ann.url, ann.title);
       }
     }
+  }
+  if (!sources.length && typeof explanation === "string") {
+    // Support standard Markdown links, including a parenthesized URL path segment.
+    // These are model-cited links, not independently verified listing pages.
+    const links = /\[([^\]\n]+)\]\((https?:\/\/(?:[^\s()<>]|\([^\s()<>]*\))+)\)/g;
+    for (const match of explanation.matchAll(links)) add(match[2], match[1]);
   }
   return sources;
 }
@@ -84,16 +99,19 @@ export function buildPrompt(input) {
     `(an EV, hybrid, manual, or automatic of the same model can carry very different values).`,
     `Estimate the resale value in CAD at the END of the ownership period for three market`,
     `scenarios (conservative, realistic, strong). In the explanation, cite the specific`,
-    `comparable listings (model, mileage, powertrain, price) you found.`
+    `comparable listings (model, mileage, powertrain, price) you found.`,
+    `Include each source as a Markdown link [listing title](https://...) in the explanation.`
   );
   return lines.join("\n");
 }
 
 export async function estimateResale(input) {
-  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  // Finish within the 60-second serverless budget, including error handling.
+  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: 50000, maxRetries: 0 });
   const response = await client.responses.create({
     model: MODEL,
     tools: [{ type: "web_search_preview" }],
+    tool_choice: "required",
     input: buildPrompt(input),
     text: {
       format: {
@@ -104,7 +122,8 @@ export async function estimateResale(input) {
       },
     },
   });
-  const estimate = normalizeEstimate(extractJson(response.output_text));
-  estimate.sources = extractSources(response);
+  const payload = extractJson(response.output_text);
+  const estimate = normalizeEstimate(payload);
+  estimate.sources = extractSources(response, payload.explanation);
   return estimate;
 }

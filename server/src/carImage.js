@@ -5,6 +5,8 @@
 
 const GOOGLE_ENDPOINT = "https://www.googleapis.com/customsearch/v1";
 const UA = "HELOC-Car-Calculator/1.0 (personal project)";
+// Keep the entire fallback chain within the serverless request budget.
+const PROVIDER_TIMEOUT_MS = 8000;
 
 export function buildImageQuery(input) {
   const { makeModel, year, trim, color } = input || {};
@@ -21,7 +23,9 @@ async function findViaGoogle(input) {
     const params = new URLSearchParams({
       key, cx, q, searchType: "image", num: "6", safe: "active", imgSize: "large",
     });
-    const res = await fetch(`${GOOGLE_ENDPOINT}?${params.toString()}`);
+    const res = await fetch(`${GOOGLE_ENDPOINT}?${params.toString()}`, {
+      signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS),
+    });
     if (!res.ok) return [];
     const data = await res.json();
     const items = Array.isArray(data.items) ? data.items : [];
@@ -45,7 +49,10 @@ async function findViaWikipedia(input) {
   try {
     // Resolve the best-matching article title.
     const osUrl = `https://en.wikipedia.org/w/api.php?action=opensearch&limit=1&namespace=0&format=json&search=${encodeURIComponent(term)}`;
-    const osRes = await fetch(osUrl, { headers: { "User-Agent": UA } });
+    const osRes = await fetch(osUrl, {
+      headers: { "User-Agent": UA },
+      signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS),
+    });
     if (!osRes.ok) return [];
     const os = await osRes.json();
     const title = Array.isArray(os) && Array.isArray(os[1]) ? os[1][0] : null;
@@ -53,11 +60,16 @@ async function findViaWikipedia(input) {
 
     // Fetch that article's lead image.
     const sumUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
-    const sumRes = await fetch(sumUrl, { headers: { "User-Agent": UA } });
+    const sumRes = await fetch(sumUrl, {
+      headers: { "User-Agent": UA },
+      signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS),
+    });
     if (!sumRes.ok) return [];
     const sum = await sumRes.json();
-    const img = sum?.originalimage?.source || sum?.thumbnail?.source;
-    return typeof img === "string" && img.startsWith("https://") ? [img] : [];
+    // Original uploads can be huge or a format the browser cannot display.
+    // Prefer Wikipedia's display thumbnail, retaining the original as a backup.
+    return [...new Set([sum?.thumbnail?.source, sum?.originalimage?.source])]
+      .filter((img) => typeof img === "string" && img.startsWith("https://"));
   } catch {
     return [];
   }

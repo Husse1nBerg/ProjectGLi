@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ResaleEstimate, Scenario } from "../types";
 import { formatCAD0 } from "../lib/format";
 import { carImageUrl, extractColor } from "../lib/carImage";
@@ -59,6 +59,18 @@ export default function ResalePanel(props: Props) {
   const [imgLoading, setImgLoading] = useState(false);
   const candidates = useRef<string[]>([]);
   const candIdx = useRef(0);
+  const imageRequest = useRef(0);
+  const color = extractColor(aiNotes);
+
+  useEffect(() => {
+    candidates.current = [];
+    candIdx.current = 0;
+    setImageUrl(null);
+    setImageError(false);
+    setImgLoading(false);
+    // Invalidate lookups for the previous vehicle, including on unmount.
+    return () => { imageRequest.current += 1; };
+  }, [makeModel, year, trim, color]);
 
   // imagin render as the last-resort fallback if no real photo loads.
   function imaginFallback(): string[] {
@@ -80,16 +92,19 @@ export default function ResalePanel(props: Props) {
 
   async function fetchImage() {
     if (!makeModel.trim()) return;
+    const request = ++imageRequest.current;
     setImgLoading(true);
     setImageError(false);
     setImageUrl(null);
     try {
-      const imgs = await fetchCarImages({ makeModel, year, trim, color: extractColor(aiNotes) });
+      const imgs = await fetchCarImages({ makeModel, year, trim, color });
+      if (request !== imageRequest.current) return;
       show([...imgs, ...imaginFallback()]); // real photos first, imagin last
     } catch {
+      if (request !== imageRequest.current) return;
       show(imaginFallback());
     } finally {
-      setImgLoading(false);
+      if (request === imageRequest.current) setImgLoading(false);
     }
   }
 
@@ -208,7 +223,7 @@ export default function ResalePanel(props: Props) {
       {estimate && (estimate.explanation || estimate.sources.length > 0) && (
         <details className="disclosure">
           <summary>
-            AI reasoning &amp; sources{estimate.sources.length > 0 ? ` (${estimate.sources.length} listings)` : ""}
+            AI reasoning &amp; sources{estimate.sources.length > 0 ? ` (${estimate.sources.length} sources)` : ""}
           </summary>
           <div className="body flex flex-col gap-3">
             {estimate.explanation && (
@@ -216,7 +231,7 @@ export default function ResalePanel(props: Props) {
             )}
             {estimate.sources.length > 0 && (
               <div className="flex flex-col gap-1.5">
-                <span className="label">Sources — live listings</span>
+                <span className="label">Sources cited in the estimate</span>
                 <ul className="flex flex-col gap-1.5">
                   {estimate.sources.map((s) => (
                     <li key={s.url}>

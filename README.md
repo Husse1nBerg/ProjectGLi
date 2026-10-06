@@ -38,7 +38,7 @@ Open http://localhost:5173. The Vite dev server proxies `/api` to the Express se
 ## Test
 
 ```bash
-npm test                     # runs the client calc/format/storage unit tests
+npm test                     # runs server API regressions and client tests
 ```
 
 ## Build (production)
@@ -56,6 +56,8 @@ Two independent ways to set the resale value:
   tool, which looks up live Quebec/Canadian listings. Output is enforced with a strict
   **JSON schema** (structured outputs), and the real **source URLs** the model cited are
   extracted from the response and shown as clickable links so you can verify the comps.
+  When structured output has no citation annotations, the source list uses the
+  Markdown links cited in the explanation. These links are not independently verified.
 - **Classic depreciation curve (mileage-aware):** a deterministic, offline baseline —
   `resale = price × (1 − 0.15)^years × mileageFactor`, where the mileage factor rewards
   below-average use: `1 + (avgKmDriven − yourKmDriven)/1000 × 0.4%`, with an average-driver
@@ -65,6 +67,20 @@ Two independent ways to set the resale value:
 
 Every scenario value (conservative / realistic / strong / curve) is editable — the
 estimates are starting points; your number wins.
+
+## Troubleshooting search and photos
+
+Vehicle photos use Wikipedia without an OpenAI key; Google image search is optional.
+Provider requests time out after eight seconds so an unavailable provider cannot
+hold up the fallback indefinitely. Wikipedia thumbnails load before original uploads.
+
+Listing estimates require a working server-side `OPENAI_API_KEY` and available API
+quota. The API distinguishes quota exhaustion, rate limits, access errors, rejected
+requests, and timeouts. Check the server log line beginning `estimate-resale failed:`
+for the underlying provider error. Never share API keys. Search requests have a
+50-second timeout and no automatic retries to fit the 60-second serverless budget.
+The request explicitly requires web search rather than relying only on the prompt
+([OpenAI web search documentation](https://developers.openai.com/api/docs/guides/tools-web-search)).
 
 ## Usage
 

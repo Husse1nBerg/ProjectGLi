@@ -9,7 +9,7 @@
     "dev:client": "npm --prefix client run dev",
     "install:all": "npm install && npm --prefix server install && npm --prefix client install",
     "build": "npm --prefix client run build",
-    "test": "npm --prefix client run test"
+    "test": "node --test server/src/*.test.js && npm --prefix client run test"
   },
   "dependencies": {
     "openai": "^4.77.0"

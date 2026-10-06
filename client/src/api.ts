@@ -25,7 +25,7 @@ export async function fetchResaleEstimate(input: CarInput): Promise<ResaleEstima
   return res.json();
 }
 
-/** Find real candidate photo URLs of the exact vehicle (color-aware) via OpenAI web search. */
+/** Find vehicle photos through Wikipedia or optional colour-aware Google search. */
 export async function fetchCarImages(query: {
   makeModel: string;
   year: number;

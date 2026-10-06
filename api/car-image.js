@@ -1,4 +1,4 @@
-// Vercel serverless function — finds real photo URLs of the exact vehicle via OpenAI web search.
+// Vercel serverless function — Wikipedia photos, with optional Google image search.
 import { findCarImages } from "../server/src/carImage.js";
 
 export const maxDuration = 60;
@@ -6,9 +6,6 @@ export const maxDuration = 60;
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
-  }
-  if (!process.env.OPENAI_API_KEY) {
-    return res.status(500).json({ error: "OPENAI_API_KEY not configured on server" });
   }
   const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
   try {

@@ -1,6 +1,7 @@
 // Vercel serverless function — mirrors the Express /api/estimate-resale route.
 // Reuses the shared resale logic so the AI behaviour is identical across hosts.
 import { estimateResale } from "../server/src/resale.js";
+import { resaleError } from "../server/src/resaleError.js";
 
 // The OpenAI web_search call takes ~15-20s; raise the function timeout well above that.
 export const maxDuration = 60;
@@ -24,6 +25,7 @@ export default async function handler(req, res) {
     res.status(200).json(estimate);
   } catch (err) {
     console.error("estimate-resale failed:", err?.message || err);
-    res.status(502).json({ error: "Resale estimation failed. Enter values manually." });
+    const { status, ...body } = resaleError(err);
+    res.status(status).json(body);
   }
 }
