@@ -1,5 +1,8 @@
 # Lessons
 
+## Photo availability is not photo accuracy
+- **2026-10-13:** A successful photo download did not prove that the image matched the requested vehicle. Search individual photo labels using year/model/trim, reject unrelated variants, and inspect representative results. Never substitute a generic image when an exact label match is unavailable.
+
 ## Verify whether a code defect explains the production failure
 - **2026-10-06:** An obsolete OpenAI-key guard broke keyless image deployments, but the deployed image API and its returned JPEG succeeded. Treat the guard as a confirmed latent bug, not the cause of the reported live outage. Keep production evidence distinct from regression-test findings.
 

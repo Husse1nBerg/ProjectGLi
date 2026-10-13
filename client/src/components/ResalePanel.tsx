@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ResaleEstimate, Scenario } from "../types";
 import { formatCAD0 } from "../lib/format";
-import { carImageUrl, extractColor } from "../lib/carImage";
+import { extractColor } from "../lib/carImage";
 import { fetchCarImages } from "../api";
 
 interface Props {
@@ -72,12 +72,6 @@ export default function ResalePanel(props: Props) {
     return () => { imageRequest.current += 1; };
   }, [makeModel, year, trim, color]);
 
-  // imagin render as the last-resort fallback if no real photo loads.
-  function imaginFallback(): string[] {
-    const url = carImageUrl(makeModel, year, aiNotes);
-    return url ? [url] : [];
-  }
-
   function show(list: string[]) {
     candidates.current = list;
     candIdx.current = 0;
@@ -99,10 +93,10 @@ export default function ResalePanel(props: Props) {
     try {
       const imgs = await fetchCarImages({ makeModel, year, trim, color });
       if (request !== imageRequest.current) return;
-      show([...imgs, ...imaginFallback()]); // real photos first, imagin last
+      show(imgs);
     } catch {
       if (request !== imageRequest.current) return;
-      show(imaginFallback());
+      show([]);
     } finally {
       if (request === imageRequest.current) setImgLoading(false);
     }
@@ -201,21 +195,21 @@ export default function ResalePanel(props: Props) {
             >
               {imgLoading ? "Finding image…" : imageUrl ? "Refresh vehicle image" : "Fetch vehicle image"}
             </button>
-            <span className="helper">Real photo from the web. Add details above and refresh; colour matching needs the optional Google search.</span>
+            <span className="helper">Photos are matched by year, make, model and trim in their labels. Labels may be inaccurate; colour may differ.</span>
             {imageUrl && !imageError && (
               <figure className="overflow-hidden rounded border border-[var(--hairline-2)] bg-[var(--ink-2)]">
                 <img
                   src={imageUrl}
-                  alt={`${makeModel} ${Number.isFinite(year) ? year : ""}`.trim()}
+                  alt={`Photo labelled ${[year, makeModel, trim].filter(Boolean).join(" ")}`}
                   onError={handleImgError}
                   className="w-full"
                 />
                 <figcaption className="px-3 py-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--frost-deep)]">
-                  {makeModel} {Number.isFinite(year) ? `· ${year}` : ""}
+                  Photo label match: {makeModel} {Number.isFinite(year) ? `· ${year}` : ""} {trim ? `· ${trim}` : ""}
                 </figcaption>
               </figure>
             )}
-            {imageError && <span className="helper err">No image found for that model.</span>}
+            {imageError && <span className="helper err">No matching photo available for this year, model and trim.</span>}
           </div>
         </div>
       </details>

@@ -25,7 +25,7 @@ export async function fetchResaleEstimate(input: CarInput): Promise<ResaleEstima
   return res.json();
 }
 
-/** Find vehicle photos through Wikipedia or optional colour-aware Google search. */
+/** Find year/model/trim-labeled photos through Commons or optional Google search. */
 export async function fetchCarImages(query: {
   makeModel: string;
   year: number;

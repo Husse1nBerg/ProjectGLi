@@ -1,16 +1,37 @@
-// Find real vehicle photos. Order of preference:
-//   1. Google Custom Search (colour/year accurate) — only if GOOGLE_API_KEY + GOOGLE_CSE_ID set.
-//   2. Wikipedia/Wikimedia lead image (keyless, free, no watermark) — generic colour/year.
-// Returns [] if nothing found; the client then falls back to the imagin render.
+// Match photo labels to the requested year, make/model and trim. Never use a
+// generic article's lead image or an unchecked render as a substitute.
 
 const GOOGLE_ENDPOINT = "https://www.googleapis.com/customsearch/v1";
 const UA = "HELOC-Car-Calculator/1.0 (personal project)";
 // Keep the entire fallback chain within the serverless request budget.
 const PROVIDER_TIMEOUT_MS = 8000;
+const COMPETITION = /\b(rally|rallycross|wrc|race|racing|competition|diecast|toy|replica)\b/i;
+
+function words(text) {
+  return String(text || "").normalize("NFKD").toLowerCase().replace(/\p{M}/gu, "")
+    .match(/[\p{L}\p{N}]+/gu) || [];
+}
+
+function vehicleWords(input) {
+  const model = words(input?.makeModel);
+  const aliases = { vw: "volkswagen", chevy: "chevrolet", merc: "mercedes" };
+  if (aliases[model[0]]) model[0] = aliases[model[0]];
+  return [...new Set([String(input.year), ...model, ...words(input.trim)])];
+}
+
+function matchesVehicle(title, input) {
+  if (typeof title !== "string" || COMPETITION.test(title.replace(/_/g, " "))) return false;
+  const tokens = new Set(words(title));
+  return vehicleWords(input).every((word) => tokens.has(word));
+}
+
+function httpsUrl(value) {
+  try { return typeof value === "string" && new URL(value).protocol === "https:"; }
+  catch { return false; }
+}
 
 export function buildImageQuery(input) {
-  const { makeModel, year, trim, color } = input || {};
-  return [color, year, makeModel, trim].filter(Boolean).join(" ").trim();
+  return [...vehicleWords(input), ...words(input.color), "-rally", "-wrc", "-racing"].join(" ");
 }
 
 async function findViaGoogle(input) {
@@ -33,7 +54,8 @@ async function findViaGoogle(input) {
       .filter(
         (it) =>
           typeof it.link === "string" &&
-          it.link.startsWith("https://") &&
+          httpsUrl(it.link) &&
+          matchesVehicle(it.title, input) &&
           ((it.mime || "").startsWith("image/") || /\.(jpg|jpeg|png|webp)(\?|$)/i.test(it.link))
       )
       .map((it) => it.link)
@@ -43,40 +65,42 @@ async function findViaGoogle(input) {
   }
 }
 
-async function findViaWikipedia(input) {
-  const term = (input?.makeModel || "").trim();
-  if (!term) return [];
+async function findViaCommons(input) {
   try {
-    // Resolve the best-matching article title.
-    const osUrl = `https://en.wikipedia.org/w/api.php?action=opensearch&limit=1&namespace=0&format=json&search=${encodeURIComponent(term)}`;
-    const osRes = await fetch(osUrl, {
+    // Search individual files, not articles. Colour is optional; identity is not.
+    const params = new URLSearchParams({
+      action: "query", format: "json", formatversion: "2", generator: "search",
+      gsrsearch: buildImageQuery({ ...input, color: "" }), gsrnamespace: "6", gsrlimit: "12",
+      prop: "imageinfo", iiprop: "url|mime", iiurlwidth: "960",
+    });
+    const res = await fetch(`https://commons.wikimedia.org/w/api.php?${params}`, {
       headers: { "User-Agent": UA },
       signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS),
     });
-    if (!osRes.ok) return [];
-    const os = await osRes.json();
-    const title = Array.isArray(os) && Array.isArray(os[1]) ? os[1][0] : null;
-    if (!title) return [];
-
-    // Fetch that article's lead image.
-    const sumUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
-    const sumRes = await fetch(sumUrl, {
-      headers: { "User-Agent": UA },
-      signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS),
+    if (!res.ok) return [];
+    const data = await res.json();
+    const pages = Array.isArray(data.query?.pages) ? data.query.pages : [];
+    const colors = words(input.color);
+    const candidates = pages.filter((page) => matchesVehicle(page.title, input));
+    // Prefer matching colour labels without rejecting otherwise suitable photos.
+    candidates.sort((a, b) => {
+      const score = (page) => colors.filter((word) => words(page.title).includes(word)).length;
+      return score(b) - score(a) || (a.index || 0) - (b.index || 0);
     });
-    if (!sumRes.ok) return [];
-    const sum = await sumRes.json();
-    // Original uploads can be huge or a format the browser cannot display.
-    // Prefer Wikipedia's display thumbnail, retaining the original as a backup.
-    return [...new Set([sum?.thumbnail?.source, sum?.originalimage?.source])]
-      .filter((img) => typeof img === "string" && img.startsWith("https://"));
+    return [...new Set(candidates.flatMap((page) => {
+      const info = page.imageinfo?.[0];
+      if (!/^image\/(jpeg|png|webp)$/.test(info?.mime || "")) return [];
+      const url = info.thumburl || info.url;
+      return httpsUrl(url) ? [url] : [];
+    }))].slice(0, 6);
   } catch {
     return [];
   }
 }
 
 export async function findCarImages(input) {
+  if (!Number.isInteger(input?.year) || input.year < 1886 || input.year > 2100 || words(input.makeModel).length < 2) return [];
   const google = await findViaGoogle(input);
   if (google.length) return google;
-  return findViaWikipedia(input);
+  return findViaCommons(input);
 }

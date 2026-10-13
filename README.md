@@ -70,9 +70,12 @@ estimates are starting points; your number wins.
 
 ## Troubleshooting search and photos
 
-Vehicle photos use Wikipedia without an OpenAI key; Google image search is optional.
+Vehicle photos use Wikimedia Commons file search without an OpenAI key; Google image search is optional.
+Photo titles must contain the requested year, make/model, and trim. Rally/WRC and
+competition photos are rejected. These are label matches, not visual verification;
+colour and other details may differ. If no label matches, no generic photo is substituted.
 Provider requests time out after eight seconds so an unavailable provider cannot
-hold up the fallback indefinitely. Wikipedia thumbnails load before original uploads.
+hold up the fallback indefinitely. Matching Commons photos use display-sized thumbnails.
 
 Listing estimates require a working server-side `OPENAI_API_KEY` and available API
 quota. The API distinguishes quota exhaustion, rate limits, access errors, rejected

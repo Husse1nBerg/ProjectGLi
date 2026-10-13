@@ -1,8 +1,11 @@
 # Task: Repair vehicle photos and listing estimates
 Date: 2026-10-06
-Status: fixes verified; publishing to main for Render deployment
+Status: vehicle-specific lookup verified; publishing to main
 
 ## Plan
+- [x] Replace generic lead photos with year/model/trim-matched file search and reject competition cars.
+- [x] Remove unchecked generic render fallback; test no-match behavior and Ford Focus RS regression.
+- [x] Verify tests, build, and real provider lookup.
 - [x] Trace photo and resale request paths and recent changes.
 - [x] Reproduce provider/API failures and add regression tests.
 - [x] Fix confirmed photo bugs in shared logic and both deployment adapters.
@@ -13,6 +16,10 @@ Status: fixes verified; publishing to main for Render deployment
 - [x] Verify source-list regression tests and production build.
 
 ## Results
+- Vehicle lookup now searches Commons file titles and requires year, make/model, and trim tokens. Google results use the same title filter; rally/WRC/racing results are rejected.
+- Removed unchecked generic render fallback. Misspellings or unmatched vehicles produce no-match feedback rather than unrelated photos. Photo labels are not a guarantee of exact model-year identity; colour may differ.
+- Live 2017 Ford Focus RS lookup returned six labeled photos. First result downloaded successfully (179,821 bytes) and was visually inspected: road-going Focus RS.
+- Latest validation: 18 server + 52 client tests pass; production build and diff whitespace check pass.
 - Photo routes incorrectly required an OpenAI key for keyless Wikipedia lookups; removed both guards.
 - Reproduced stale Jetta photo relabeled Honda after vehicle changes, including in-flight responses. Both regressions fixed.
 - Prefer Wikipedia thumbnails and time out upstream photo providers after eight seconds.

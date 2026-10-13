@@ -53,3 +53,30 @@ it("ignores an old vehicle lookup that finishes after switching vehicles", async
   expect(container.querySelector("img")).toBeNull();
   expect(container.textContent).toContain("Fetch vehicle image");
 });
+
+it("shows no matching photo without substituting a render when no candidates match", async () => {
+  vi.mocked(fetchCarImages).mockResolvedValue([]);
+  await act(async () => clickFetch());
+  expect(container.querySelector("img")).toBeNull();
+  expect(container.textContent).toContain("No matching photo available");
+});
+
+it("stops after matching photo candidates fail without substituting a render", async () => {
+  vi.mocked(fetchCarImages).mockResolvedValue([
+    "https://example.com/jetta-front.jpg", "https://example.com/jetta-side.jpg",
+  ]);
+  await act(async () => clickFetch());
+  expect(container.querySelector("img")?.src).toContain("jetta-front.jpg");
+  act(() => { container.querySelector("img")!.dispatchEvent(new Event("error")); });
+  expect(container.querySelector("img")?.src).toContain("jetta-side.jpg");
+  act(() => { container.querySelector("img")!.dispatchEvent(new Event("error")); });
+  expect(container.querySelector("img")).toBeNull();
+  expect(container.textContent).toContain("No matching photo available");
+});
+
+it("does not substitute a render when photo lookup fails", async () => {
+  vi.mocked(fetchCarImages).mockRejectedValue(new Error("Lookup unavailable"));
+  await act(async () => clickFetch());
+  expect(container.querySelector("img")).toBeNull();
+  expect(container.textContent).toContain("No matching photo available");
+});
