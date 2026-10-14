@@ -23,6 +23,12 @@ export type Scenario = "conservative" | "realistic" | "strong" | "curve";
 export interface Source {
   url: string;
   title: string;
+  vehicle?: string | null;
+  priceCAD?: number | null;
+  mileageKm?: number | null;
+  location?: string | null;
+  matchNotes?: string | null;
+  provenance?: "provider-citation" | "model-link";
 }
 
 export interface ResaleEstimate {
@@ -31,6 +37,7 @@ export interface ResaleEstimate {
   strongResale: number;
   explanation: string;
   sources: Source[];
+  searchedAt?: string;
 }
 
 export interface HelocResult {
@@ -63,4 +70,8 @@ export interface SavedCar {
   resaleValue: number;
   scenario: Scenario;
   result: HelocResult;
+  estimate?: ResaleEstimate | null;
+  excludedUrls?: string[];
+  savedAt?: string;
+  estimateInputKey?: string;
 }

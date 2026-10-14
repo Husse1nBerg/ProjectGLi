@@ -1,6 +1,27 @@
-# Task: Repair vehicle photos and listing estimates
-Date: 2026-10-06
-Status: vehicle-specific lookup verified; publishing to main
+# Task: Ownership planning improvements (items 3–7)
+Date: 2026-10-13
+Status: implemented and verified; publishing to main
+
+## Current plan
+- [x] Show outstanding HELOC principal, sale proceeds, cash shortfall and surplus without double counting depreciation.
+- [x] Return comparable vehicle details and search date; display unknowns and allow exclusion with explicit re-estimation.
+- [x] Add independent rate/resale/duration sensitivity controls with clear assumptions.
+- [x] Reopen/update saved scenarios, compare assumptions, export CSV and share calculations via URL.
+- [x] Preserve drafts and previous results, prevent stale search responses, add retry/cancel and manual fallback.
+- [ ] Verify regression tests, app interactions and production build, then publish to the existing main branch.
+
+## Assumptions
+- Existing interest-only financing, Quebec purchase tax, CAD, and financing/depreciation scope remain unchanged.
+- Sharing includes vehicle inputs and contribution names; estimates/evidence are not copied into the URL.
+- Exclusion requires a fresh server estimate; unknown comparable attributes must never be invented.
+
+## Current verification
+- Full server/client suite and production build passed. Final App rerun passed 7 interactions after the share-link usability change; total coverage is 22 server + 81 client tests.
+- Isolated Chrome smoke test passed desktop and 390px mobile: no page errors or horizontal overflow. Verified shared-link import and refresh, save/update/reopen, CSV download, retry, exclusions, and sensitivity controls. API replies were mocked in this browser test.
+- Review fixes: validate restored evidence, consume imported share hash so draft edits survive refresh, cancel in-flight searches when selecting offline curve or editing resale.
+- Screenshots and smoke script are temporary test artifacts, not included in the repository.
+
+## Previous completed work
 
 ## Plan
 - [x] Replace generic lead photos with year/model/trim-matched file search and reject competition cars.

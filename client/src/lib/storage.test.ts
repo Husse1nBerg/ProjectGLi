@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { loadSavedCars, saveCar, removeCar, STORAGE_KEY } from "./storage";
 import type { SavedCar } from "../types";
 
@@ -47,5 +47,30 @@ describe("storage", () => {
   it("tolerates corrupt storage", () => {
     localStorage.setItem(STORAGE_KEY, "not json");
     expect(loadSavedCars()).toEqual([]);
+  });
+  it("updates the same saved ID instead of adding a duplicate", () => {
+    saveCar(sample);
+    saveCar({ ...sample, resaleValue: 24000 });
+    const cars = loadSavedCars();
+    expect(cars).toHaveLength(1);
+    expect(cars[0].result.resaleValue).toBe(24000);
+  });
+  it("skips malformed saved records", () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([null, { id: "bad" }, sample]));
+    expect(loadSavedCars()).toHaveLength(1);
+  });
+  it("reports a failed save instead of pretending it persisted", () => {
+    const spy = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("quota"); });
+    try { expect(() => saveCar(sample)).toThrow("quota"); }
+    finally { spy.mockRestore(); }
+  });
+  it("drops malformed optional evidence and exclusions when restoring saved cars", () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([{ ...sample, estimate: {}, excludedUrls: {} }]));
+    expect(loadSavedCars()[0].estimate).toBeNull();
+    expect(loadSavedCars()[0].excludedUrls).toEqual([]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([{ ...sample, estimate: {
+      conservativeResale: 1, realisticResale: 2, strongResale: 3, explanation: "test", sources: [null],
+    } }]));
+    expect(loadSavedCars()[0].estimate?.sources).toEqual([]);
   });
 });

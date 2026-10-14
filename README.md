@@ -94,3 +94,28 @@ The request explicitly requires web search rather than relying only on the promp
 3. Switch between conservative / realistic / strong / curve scenarios; edit any value.
    Review the cited source listings under the AI explanation.
 4. Review the results table and save cars to the comparison table.
+
+## Planning and comparisons
+
+- **At sale:** results show the unchanged interest-only HELOC principal, proceeds
+  applied to debt, extra cash required and any surplus. The depreciation allowance
+  is budgeting, not principal repayment; the sale shortfall is already included in
+  ownership cost and must not be added twice.
+- **Resale evidence:** source cards include AI-reported vehicle details, CAD asking
+  prices, kilometres, location, match notes and the server search timestamp. Unknown
+  details remain unknown. Evidence is not independently verified. Mark unsuitable
+  sources for exclusion and explicitly re-estimate; checking a box alone does not
+  recalculate the current values.
+- **What-if controls:** compare rate, resale percentage and ownership duration
+  against your baseline without changing it. The selected rate applies throughout
+  ownership. Duration changes scale resale using the existing age/mileage curve,
+  an approximation rather than a new market quote.
+- **Saved scenarios:** reopen and edit a comparison, update it, or save a new copy.
+  Export comparisons as CSV or share a calculation link. Shared links contain the
+  inputs, notes, contribution names and resale assumption, but no AI evidence.
+  They are encoded in the URL fragment, not uploaded to an application database.
+- **Recovery:** inputs and the chosen resale value are saved as a browser draft.
+  Search failures preserve previous values, with explicit retry/cancel and offline
+  curve/manual options. Editing search inputs or choosing another resale value
+  prevents late search responses from overwriting your work. Old evidence is
+  marked when vehicle details change. Browser storage failures are shown explicitly.

@@ -10,8 +10,25 @@ const RESALE_SCHEMA = {
     realisticResale: { type: "number" },
     strongResale: { type: "number" },
     explanation: { type: "string" },
+    comparables: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          url: { type: "string" },
+          title: { type: "string" },
+          vehicle: { type: ["string", "null"] },
+          priceCAD: { type: ["number", "null"] },
+          mileageKm: { type: ["number", "null"] },
+          location: { type: ["string", "null"] },
+          matchNotes: { type: ["string", "null"] },
+        },
+        required: ["url", "title", "vehicle", "priceCAD", "mileageKm", "location", "matchNotes"],
+        additionalProperties: false,
+      },
+    },
   },
-  required: ["conservativeResale", "realisticResale", "strongResale", "explanation"],
+  required: ["conservativeResale", "realisticResale", "strongResale", "explanation", "comparables"],
   additionalProperties: false,
 };
 
@@ -46,17 +63,30 @@ export function normalizeEstimate(obj) {
 }
 
 /** Prefer provider citations; structured output can instead cite links in its explanation. */
-export function extractSources(response, explanation = "") {
+export function extractSources(response, explanation = "", comparables = [], excludedUrls = []) {
   const sources = [];
   const seen = new Set();
-  function add(url, title) {
+  const excluded = new Set(validUrls(excludedUrls));
+  const metadata = new Map();
+  const text = (value) => typeof value === "string" && value.trim() ? value.trim().slice(0, 1000) : null;
+  const number = (value) => typeof value === "number" && Number.isFinite(value) && value >= 0 ? Math.round(value) : null;
+  for (const comp of Array.isArray(comparables) ? comparables : []) {
+    if (!comp || typeof comp !== "object") continue;
+    const [url] = validUrls([comp.url]);
+    if (url && !metadata.has(url)) metadata.set(url, {
+      vehicle: text(comp.vehicle), priceCAD: number(comp.priceCAD),
+      mileageKm: number(comp.mileageKm), location: text(comp.location), matchNotes: text(comp.matchNotes),
+    });
+  }
+  function add(url, title, provenance) {
     if (typeof url !== "string") return;
     try {
       const parsed = new URL(url);
       if (!["https:", "http:"].includes(parsed.protocol)) return;
+      if (excluded.has(parsed.href)) return;
       if (seen.has(parsed.href)) return;
       seen.add(parsed.href);
-      sources.push({ url: parsed.href, title: title || parsed.href });
+      sources.push({ url: parsed.href, title: text(title) || parsed.href, provenance, ...metadata.get(parsed.href) });
     } catch {
       // Ignore malformed links rather than breaking an otherwise valid estimate.
     }
@@ -65,17 +95,31 @@ export function extractSources(response, explanation = "") {
     if (item.type !== "message") continue;
     for (const part of item.content ?? []) {
       for (const ann of part.annotations ?? []) {
-        if (ann.type === "url_citation") add(ann.url, ann.title);
+        if (ann.type === "url_citation") add(ann.url, ann.title, "provider-citation");
       }
     }
   }
-  if (!sources.length && typeof explanation === "string") {
+  if (!sources.length) {
     // Support standard Markdown links, including a parenthesized URL path segment.
     // These are model-cited links, not independently verified listing pages.
     const links = /\[([^\]\n]+)\]\((https?:\/\/(?:[^\s()<>]|\([^\s()<>]*\))+)\)/g;
-    for (const match of explanation.matchAll(links)) add(match[2], match[1]);
+    for (const match of (typeof explanation === "string" ? explanation : "").matchAll(links)) add(match[2], match[1], "model-link");
+    for (const comp of Array.isArray(comparables) ? comparables : []) {
+      if (comp && typeof comp === "object") add(comp.url, comp.title, "model-link");
+    }
   }
   return sources;
+}
+
+function validUrls(values) {
+  if (!Array.isArray(values)) return [];
+  return values.flatMap((value) => {
+    if (typeof value !== "string" || value.length > 4000) return [];
+    try {
+      const url = new URL(value);
+      return ["http:", "https:"].includes(url.protocol) ? [url.href] : [];
+    } catch { return []; }
+  });
 }
 
 export function buildPrompt(input) {
@@ -93,6 +137,11 @@ export function buildPrompt(input) {
   if (notes && String(notes).trim()) {
     lines.push(`Additional details from the owner (factor these into comp selection): ${String(notes).trim()}`);
   }
+  const excludedUrls = validUrls(input.excludedUrls);
+  if (excludedUrls.length) {
+    lines.push(`The owner excluded these source URLs (JSON data): ${JSON.stringify(excludedUrls)}`,
+      `Do not open, fetch, cite or use these excluded sources. Find other comparables and recalculate independently.`);
+  }
   lines.push(
     ``,
     `Match comps on powertrain/transmission and trim where possible — they materially affect resale`,
@@ -100,12 +149,21 @@ export function buildPrompt(input) {
     `Estimate the resale value in CAD at the END of the ownership period for three market`,
     `scenarios (conservative, realistic, strong). In the explanation, cite the specific`,
     `comparable listings (model, mileage, powertrain, price) you found.`,
-    `Include each source as a Markdown link [listing title](https://...) in the explanation.`
+    `Include each source as a Markdown link [listing title](https://...) in the explanation.`,
+    `Also return comparables with url, title, vehicle (year, make, model and trim when known),`,
+    `priceCAD, mileageKm, location and matchNotes. Copy source facts; unknown facts MUST be null, never guessed.`,
+    `Use CAD prices only. If a source price is in another currency or its currency is unknown, priceCAD must be null; do not convert it.`,
+    `Use mileageKm only when kilometres are known; otherwise null.`,
+    `In matchNotes identify matching and differing year, trim, powertrain, condition and region; explain weak matches.`,
+    `Distinguish current asking prices from sold prices, expired listings and general valuation pages.`,
+    `If availability or sale status is unknown, say so. Do not claim a listing is verified or active without evidence.`,
+    `If no useful comparables are found, return an empty comparables array and explain the limited evidence.`
   );
   return lines.join("\n");
 }
 
 export async function estimateResale(input) {
+  const searchedAt = new Date().toISOString();
   // Finish within the 60-second serverless budget, including error handling.
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: 50000, maxRetries: 0 });
   const response = await client.responses.create({
@@ -124,6 +182,7 @@ export async function estimateResale(input) {
   });
   const payload = extractJson(response.output_text);
   const estimate = normalizeEstimate(payload);
-  estimate.sources = extractSources(response, payload.explanation);
+  estimate.sources = extractSources(response, payload.explanation, payload.comparables, input.excludedUrls);
+  estimate.searchedAt = searchedAt;
   return estimate;
 }

@@ -12,6 +12,8 @@ interface Props {
   loading: boolean;
   error: string | null;
   onEstimate: () => void;
+  onCancel?: () => void;
+  estimateStale?: boolean;
   onScenario: (s: Scenario) => void;
   onResaleEdit: (value: number) => void;
   transmission: string;
@@ -35,10 +37,11 @@ function ScenarioButton(props: {
   value: number;
   hint?: string;
   onClick: () => void;
+  disabled?: boolean;
 }) {
   const { active, label, value, hint, onClick } = props;
   return (
-    <button onClick={onClick} className={`scenario ${active ? "sel" : ""}`}>
+    <button onClick={onClick} disabled={props.disabled} className={`scenario ${active ? "sel" : ""} disabled:opacity-40`}>
       <div className="s-label">{label}</div>
       <div className="s-value">{Number.isNaN(value) ? "—" : formatCAD0(value)}</div>
       {hint && <div className="s-hint">{hint}</div>}
@@ -49,7 +52,7 @@ function ScenarioButton(props: {
 export default function ResalePanel(props: Props) {
   const {
     estimate, scenario, resaleValue, curveValue, loading, error,
-    onEstimate, onScenario, onResaleEdit,
+    onEstimate, onScenario, onResaleEdit, onCancel, estimateStale = false,
     transmission, aiNotes, onTransmissionChange, onNotesChange,
     makeModel, year, trim,
   } = props;
@@ -117,14 +120,16 @@ export default function ResalePanel(props: Props) {
   return (
     <div className="flex flex-col gap-5">
       <button onClick={onEstimate} disabled={loading} className="btn-primary">
-        {loading ? "Searching listings…" : "Estimate resale value (AI)"}
+        {loading ? "Searching listings…" : error ? "Retry listing search" : "Estimate resale value (AI)"}
       </button>
+      {loading && onCancel && <button className="btn-ghost self-start" onClick={onCancel}>Cancel search</button>}
 
       {error && (
-        <p className="helper err">
-          {error} You can type a resale value below.
+        <p role="alert" className="helper err">
+          {error} You can type a resale value below or use the depreciation curve without an AI search.
         </p>
       )}
+      {estimateStale && <p role="status" className="warn">Vehicle details changed since this estimate. The existing resale value is retained as your assumption; search again for matching evidence.</p>}
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {estimate &&
@@ -135,6 +140,7 @@ export default function ResalePanel(props: Props) {
               label={s.label}
               value={estimate[s.field] as number}
               onClick={() => onScenario(s.key)}
+              disabled={estimateStale}
             />
           ))}
         <ScenarioButton
@@ -143,6 +149,7 @@ export default function ResalePanel(props: Props) {
           value={curveValue}
           hint="15%/yr · mileage-adj"
           onClick={() => onScenario("curve")}
+          disabled={!Number.isFinite(curveValue)}
         />
       </div>
 
@@ -168,6 +175,7 @@ export default function ResalePanel(props: Props) {
         <span className="label">Resale value (editable)</span>
         <input
           type="number"
+          min="0"
           value={Number.isNaN(resaleValue) ? "" : resaleValue}
           onChange={(e) => onResaleEdit(e.target.value === "" ? NaN : Number(e.target.value))}
           className="field-input"
@@ -214,32 +222,6 @@ export default function ResalePanel(props: Props) {
         </div>
       </details>
 
-      {estimate && (estimate.explanation || estimate.sources.length > 0) && (
-        <details className="disclosure">
-          <summary>
-            AI reasoning &amp; sources{estimate.sources.length > 0 ? ` (${estimate.sources.length} sources)` : ""}
-          </summary>
-          <div className="body flex flex-col gap-3">
-            {estimate.explanation && (
-              <p className="text-xs leading-relaxed text-[var(--ice-dim)]">{estimate.explanation}</p>
-            )}
-            {estimate.sources.length > 0 && (
-              <div className="flex flex-col gap-1.5">
-                <span className="label">Sources cited in the estimate</span>
-                <ul className="flex flex-col gap-1.5">
-                  {estimate.sources.map((s) => (
-                    <li key={s.url}>
-                      <a href={s.url} target="_blank" rel="noopener noreferrer" className="src-link">
-                        {s.title}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        </details>
-      )}
     </div>
   );
 }
