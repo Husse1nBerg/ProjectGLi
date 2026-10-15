@@ -1,6 +1,11 @@
 # Task: Ownership planning improvements (items 3–7)
 Date: 2026-10-13
-Status: implemented and verified; publishing to main
+Status: published to main; correcting Render TypeScript build failure
+
+## Render build correction (2026-10-15)
+- [x] Replace unsupported Array.at in App.test.tsx with ES2020-compatible indexing.
+- [x] Force a fresh TypeScript check (`tsc -b --force`), run App tests (7 passed) and production build.
+- Correction prepared for publication to main; the first sandboxed Vite attempt hit a filesystem access restriction and the unrestricted build passed.
 
 ## Current plan
 - [x] Show outstanding HELOC principal, sale proceeds, cash shortfall and surplus without double counting depreciation.

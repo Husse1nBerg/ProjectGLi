@@ -75,7 +75,8 @@ it("preserves inputs and results after failure, then retries with excluded sourc
   act(() => exclude.click());
   expect(field("Resale value").value).toBe("23000");
   await click("Re-estimate without excluded sources");
-  expect(vi.mocked(fetchResaleEstimate).mock.calls.at(-1)?.[1]).toEqual(["https://example.com/car"]);
+  const calls = vi.mocked(fetchResaleEstimate).mock.calls;
+  expect(calls[calls.length - 1]?.[1]).toEqual(["https://example.com/car"]);
 });
 
 it("late search results cannot overwrite a manual resale edit", async () => {

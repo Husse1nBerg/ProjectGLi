@@ -1,5 +1,8 @@
 # Lessons
 
+## Force a fresh TypeScript check before publishing
+- **2026-10-15:** Render's clean build caught an ES2022 Array.at call in a test while the client targets ES2020. Local incremental build verification missed it. Keep test syntax compatible with the configured library and run `tsc -b --force` before publishing build fixes.
+
 ## Photo availability is not photo accuracy
 - **2026-10-13:** A successful photo download did not prove that the image matched the requested vehicle. Search individual photo labels using year/model/trim, reject unrelated variants, and inspect representative results. Never substitute a generic image when an exact label match is unavailable.
 
